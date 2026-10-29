@@ -43,9 +43,9 @@ export default function LoginScreen() {
 
   const handleGuestDemo = async () => {
     // Quick fill for testing
-    setEmail('alex@mivo.local');
+    setEmail('alex@mivo.app');
     setPassword('Password123!');
-    const result = await login('alex@mivo.local', 'Password123!');
+    const result = await login('alex@mivo.app', 'Password123!');
     if (result.success) {
       router.replace('/(tabs)');
     }

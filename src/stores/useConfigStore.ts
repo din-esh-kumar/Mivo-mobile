@@ -12,7 +12,7 @@ interface ConfigState {
   resetToDefaults: () => Promise<void>;
 }
 
-const DEFAULT_API = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
+const DEFAULT_API = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const DEFAULT_WS = process.env.EXPO_PUBLIC_WS_URL || 'http://localhost:4000';
 
 export const useConfigStore = create<ConfigState>((set) => ({

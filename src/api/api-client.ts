@@ -8,7 +8,7 @@ export const STORAGE_KEYS = {
   WS_URL: 'mivo_mobile_ws_url',
 };
 
-const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
+const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 class MobileApiClient {
   private customBaseUrl: string | null = null;

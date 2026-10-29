@@ -35,13 +35,13 @@ export default function ServerSettingsScreen() {
   };
 
   const setPreset = (host: string) => {
-    setInputApi(`http://${host}:4000/api`);
+    setInputApi(`http://${host}:4000/api/v1`);
     setInputWs(`http://${host}:4000`);
   };
 
   const handleReset = async () => {
     await resetToDefaults();
-    setInputApi('http://localhost:4000/api');
+    setInputApi('http://localhost:4000/api/v1');
     setInputWs('http://localhost:4000');
     Alert.alert('Reset', 'Endpoints restored to default values.');
   };

@@ -12,8 +12,8 @@
 
 **Next-Generation Unified Real-Time Communication & Stage Platform for iOS & Android**
 
-[![React Native](https://img.shields.io/badge/React%20Native-0.76-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactnative.dev/)
-[![Expo](https://img.shields.io/badge/Expo-SDK%2052-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React%20Native-0.88-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactnative.dev/)
+[![Expo](https://img.shields.io/badge/Expo-SDK%2058-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.8-010101?style=for-the-badge&logo=socketdotio&logoColor=white)](https://socket.io/)
 [![Zustand](https://img.shields.io/badge/Zustand-5.0-764ABC?style=for-the-badge)](https://zustand.docs.pmnd.rs/)
@@ -26,7 +26,7 @@
 
 **Mivo Mobile** brings Mivo's signature **Unified Communication Stage** directly to mobile devices. It allows users to fluidly morph between text discussions, audio huddles, and video stages without leaving the conversation room or dropping WebRTC connections.
 
-Built on **Expo SDK 52** and **Expo Router**, this repository is a standalone mobile app configured with dedicated API and Socket.io clients tailored for the Mivo backend.
+Built on **Expo SDK 58** and **Expo Router**, this repository is a standalone mobile app configured with dedicated API and Socket.io clients tailored for the Mivo backend.
 
 ---
 

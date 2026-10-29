@@ -1,10 +1,10 @@
-import './setup';
+import '../setup';
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { socketClient } from '../src/socket/socket-client';
-import { REALTIME_EVENTS } from '../src/constants/events';
+import { socketClient } from '../../src/socket/socket-client';
+import { REALTIME_EVENTS } from '../../src/constants/events';
 
-describe('SocketClient', () => {
+describe('Socket: socket-client', () => {
   beforeEach(() => {
     socketClient.disconnect();
   });
@@ -30,16 +30,13 @@ describe('SocketClient', () => {
       assert.deepStrictEqual(msg, testPayload);
     });
 
-    // Simulate emission through internal listeners
     const listenersMap = (socketClient as any).listeners.get(REALTIME_EVENTS.CHAT_NEW_MESSAGE);
     assert.ok(listenersMap);
     assert.strictEqual(listenersMap.size, 1);
 
-    // Call listener
     listenersMap.forEach((cb: any) => cb(testPayload));
     assert.strictEqual(callCount, 1);
 
-    // Unsubscribe
     unsubscribe();
     assert.strictEqual(listenersMap.size, 0);
   });
@@ -58,7 +55,7 @@ describe('SocketClient', () => {
     assert.strictEqual(socketClient.isConnected(), false);
   });
 
-  test('room and dm methods add and delete tracked active targets', () => {
+  test('room and dm methods track active targets', () => {
     socketClient.joinRoom('room-123');
     assert.strictEqual((socketClient as any).joinedRooms.has('room-123'), true);
     socketClient.leaveRoom('room-123');

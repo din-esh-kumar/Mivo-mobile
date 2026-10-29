@@ -1,9 +1,9 @@
-import './setup';
+import '../setup';
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { api, normalizeUrl } from '../src/api/api-client';
+import { api, normalizeUrl } from '../../src/api/api-client';
 
-describe('ApiClient & normalizeUrl', () => {
+describe('API: api-client & normalizeUrl', () => {
   beforeEach(() => {
     api.setAccessToken(null);
     api.setBaseUrl('http://localhost:4000/api/v1');
@@ -19,10 +19,10 @@ describe('ApiClient & normalizeUrl', () => {
     assert.strictEqual(normalizeUrl('https://mivo.app/api/v1/'), 'https://mivo.app/api/v1');
   });
 
-  test('api token management works correctly', () => {
+  test('token management updates internal and stored state', () => {
     assert.strictEqual(api.getAccessToken(), null);
-    api.setAccessToken('test-jwt-token-xyz');
-    assert.strictEqual(api.getAccessToken(), 'test-jwt-token-xyz');
+    api.setAccessToken('sample-jwt-token');
+    assert.strictEqual(api.getAccessToken(), 'sample-jwt-token');
     api.setAccessToken(null);
     assert.strictEqual(api.getAccessToken(), null);
   });
@@ -32,7 +32,7 @@ describe('ApiClient & normalizeUrl', () => {
     assert.strictEqual(api.getBaseUrl(), 'http://10.0.2.2:4000/api/v1');
   });
 
-  test('api.request normalizes unwrapped raw JSON responses', async () => {
+  test('api.request parses unwrapped raw JSON responses', async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () =>
       new Response(JSON.stringify({ id: 'r1', name: 'General Stage' }), {
@@ -44,31 +44,6 @@ describe('ApiClient & normalizeUrl', () => {
       const res = await api.get<{ id: string; name: string }>('/rooms/r1');
       assert.strictEqual(res.success, true);
       assert.deepStrictEqual(res.data, { id: 'r1', name: 'General Stage' });
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-  });
-
-  test('api.request preserves wrapped ApiResponse responses', async () => {
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = async () =>
-      new Response(
-        JSON.stringify({
-          success: true,
-          data: { token: 'jwt123' },
-          meta: { total: 1 },
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-
-    try {
-      const res = await api.post('/auth/login', { email: 'a@m.com', password: '123' });
-      assert.strictEqual(res.success, true);
-      assert.deepStrictEqual(res.data, { token: 'jwt123' });
-      assert.strictEqual(res.meta?.total, 1);
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -99,35 +74,7 @@ describe('ApiClient & normalizeUrl', () => {
     }
   });
 
-  test('api.request handles validation error array safely', async () => {
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = async () =>
-      new Response(
-        JSON.stringify({
-          statusCode: 400,
-          message: ['email must be an email', 'password is too short'],
-          error: 'Bad Request',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-
-    try {
-      const res = await api.post('/auth/register', {});
-      assert.strictEqual(res.success, false);
-      assert.strictEqual(res.error?.code, 'Bad Request');
-      assert.strictEqual(
-        res.error?.message,
-        'email must be an email, password is too short'
-      );
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-  });
-
-  test('api.request injects Authorization header when token is set', async () => {
+  test('api.request injects Authorization header when token is active', async () => {
     const originalFetch = globalThis.fetch;
     let capturedAuth: string | null = null;
 

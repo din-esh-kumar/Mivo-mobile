@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../../src/constants/theme';
 import { useConversationStore } from '../../src/stores/useConversationStore';
 import { useAuthStore } from '../../src/stores/useAuthStore';
-import { ConversationDTO } from '../../src/types';
+import { ConversationDTO, UserSummaryDTO } from '../../src/types';
 import { Avatar } from '../../src/components/Avatar';
 import { Search, Plus, MessageSquare } from 'lucide-react-native';
 
@@ -36,9 +36,17 @@ export default function ConversationsScreen() {
     setRefreshing(false);
   };
 
-  const getRecipient = (conv: ConversationDTO) => {
+  const getRecipient = (conv: ConversationDTO): UserSummaryDTO => {
     const other = conv.participants?.find((p) => p.userId !== currentUser?.id);
-    return other?.user || { displayName: conv.name || 'Chat', status: 'OFFLINE' };
+    return (
+      other?.user || {
+        id: conv.id,
+        username: conv.name || 'chat',
+        displayName: conv.name || 'Chat',
+        avatarUrl: conv.avatarUrl || null,
+        status: 'OFFLINE',
+      }
+    );
   };
 
   // Sample conversations if empty
@@ -338,3 +346,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

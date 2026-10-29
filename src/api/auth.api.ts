@@ -23,3 +23,4 @@ export const authApi = {
     return api.patch<UserProfileDTO>('/users/me/status', { status, customStatus });
   },
 };
+

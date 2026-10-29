@@ -62,3 +62,4 @@ export const useConfigStore = create<ConfigState>((set) => ({
     set({ apiUrl: DEFAULT_API, wsUrl: DEFAULT_WS });
   },
 }));
+

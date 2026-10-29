@@ -177,3 +177,4 @@ eas build -p ios --profile preview
 ## 📄 License
 
 Proprietary — Mivo Ecosystem. All rights reserved.
+

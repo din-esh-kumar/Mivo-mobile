@@ -169,3 +169,4 @@ export interface RealtimePresenceEvent {
   status: UserStatus;
   customStatus?: string | null;
 }
+

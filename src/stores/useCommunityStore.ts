@@ -61,3 +61,4 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
     set({ activeChannel: channel });
   },
 }));
+

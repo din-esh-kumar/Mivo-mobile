@@ -22,3 +22,4 @@ export const conversationsApi = {
     return api.post<ConversationDTO>('/conversations', { recipientUserId });
   },
 };
+

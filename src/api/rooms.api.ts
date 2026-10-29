@@ -10,3 +10,4 @@ export const roomsApi = {
     return api.patch<RoomDetailsDTO>(`/rooms/${roomId}/mode`, { mode });
   },
 };
+

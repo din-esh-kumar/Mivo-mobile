@@ -14,3 +14,4 @@ export const communitiesApi = {
     return api.get<ChannelDTO>(`/channels/${channelId}`);
   },
 };
+

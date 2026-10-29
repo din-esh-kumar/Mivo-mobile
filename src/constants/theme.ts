@@ -64,3 +64,4 @@ export const THEME = {
     caption: { fontSize: 11, fontWeight: '500' as const, color: '#64748B' },
   },
 };
+

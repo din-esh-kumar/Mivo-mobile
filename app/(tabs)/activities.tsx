@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { THEME } from '../../src/constants/theme';
 import { Bell, Radio, AtSign, Video, CheckCircle2 } from 'lucide-react-native';
+import { showCrossPlatformAlert } from '../../src/utils/dialog';
 
 interface ActivityItem {
   id: string;
@@ -78,7 +79,7 @@ export default function ActivitiesScreen() {
         });
         break;
       case 'recording':
-        Alert.alert(
+        showCrossPlatformAlert(
           'Minutes of Meeting Summary',
           'Key Takeaways:\n• Unified Stage architecture finalized for Expo SDK 58.\n• Zero-drop morphing between Audio, Video, and Stream modes.\n• Next milestone: autonomous mesh connections.'
         );

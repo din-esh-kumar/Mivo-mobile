@@ -13,6 +13,7 @@ import { THEME } from '../../src/constants/theme';
 import { Input } from '../../src/components/Input';
 import { Button } from '../../src/components/Button';
 import { useConfigStore } from '../../src/stores/useConfigStore';
+import { showCrossPlatformAlert } from '../../src/utils/dialog';
 import { Server, ArrowLeft, RefreshCw, Smartphone, Laptop } from 'lucide-react-native';
 
 export default function ServerSettingsScreen() {
@@ -24,12 +25,12 @@ export default function ServerSettingsScreen() {
 
   const handleSave = async () => {
     if (!inputApi.trim() || !inputWs.trim()) {
-      Alert.alert('Error', 'API and WebSocket URLs cannot be empty');
+      showCrossPlatformAlert('Error', 'API and WebSocket URLs cannot be empty');
       return;
     }
 
     await updateEndpoints(inputApi.trim(), inputWs.trim());
-    Alert.alert('Endpoints Updated', 'Mivo will now connect to your custom endpoints.', [
+    showCrossPlatformAlert('Endpoints Updated', 'Mivo will now connect to your custom endpoints.', [
       { text: 'OK', onPress: () => router.back() },
     ]);
   };
@@ -43,7 +44,7 @@ export default function ServerSettingsScreen() {
     await resetToDefaults();
     setInputApi('http://localhost:4000/api/v1');
     setInputWs('http://localhost:4000');
-    Alert.alert('Reset', 'Endpoints restored to default values.');
+    showCrossPlatformAlert('Reset', 'Endpoints restored to default values.');
   };
 
   return (

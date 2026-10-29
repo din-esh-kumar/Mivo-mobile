@@ -88,16 +88,21 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
   },
 
   selectCommunity: async (community) => {
-    set({ activeCommunity: community, isLoading: true });
+    // Optimistically update activeCommunity and its channels immediately
+    set({
+      activeCommunity: community,
+      channels: community.channels || [],
+      isLoading: true,
+    });
     try {
       const res = await communitiesApi.getCommunityChannels(community.id);
       if (res.success && res.data && res.data.length > 0) {
         set({ channels: res.data, isLoading: false });
       } else {
-        set({ channels: community.channels || [], isLoading: false });
+        set({ isLoading: false });
       }
     } catch {
-      set({ channels: community.channels || [], isLoading: false });
+      set({ isLoading: false });
     }
   },
 

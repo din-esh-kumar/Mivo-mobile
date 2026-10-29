@@ -31,141 +31,63 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   isLoading: false,
 
   joinRoom: async (roomId: string, defaultMode = 'VOICE') => {
-    set({ isLoading: true });
+    // Optimistically set room and activeMode immediately for 0ms transition
+    const fallbackParticipants: RoomMemberDTO[] = [
+      {
+        userId: 'peer-1',
+        displayName: 'Sarah Jenkins',
+        username: 'sarah_pm',
+        avatarUrl: null,
+        isMuted: false,
+        isVideoEnabled: defaultMode === 'VIDEO' || defaultMode === 'STREAM',
+        isSpeaking: true,
+        isHost: false,
+        joinedAt: new Date().toISOString(),
+      },
+      {
+        userId: 'peer-2',
+        displayName: 'Marcus Vance',
+        username: 'marcus_eng',
+        avatarUrl: null,
+        isMuted: true,
+        isVideoEnabled: false,
+        isSpeaking: false,
+        isHost: false,
+        joinedAt: new Date().toISOString(),
+      },
+    ];
+
+    set({
+      currentRoom: {
+        id: roomId,
+        mode: defaultMode,
+        hostId: 'current-user',
+        participants: fallbackParticipants,
+        createdAt: new Date().toISOString(),
+      },
+      activeMode: defaultMode,
+      participants: fallbackParticipants,
+      isJoined: true,
+      isLoading: true,
+    });
+
     try {
       socketClient.joinRoom(roomId);
 
       const res = await roomsApi.getRoomDetails(roomId);
       if (res.success && res.data) {
-        set({
-          currentRoom: res.data,
-          activeMode: res.data.mode || defaultMode,
-          participants: res.data.participants || [],
-          isJoined: true,
+        const roomData = res.data;
+        set((state) => ({
+          currentRoom: roomData,
+          activeMode: state.activeMode || roomData.mode || defaultMode,
+          participants: roomData.participants || state.participants,
           isLoading: false,
-        });
+        }));
       } else {
-        // Fallback placeholder room when developing or offline
-        set({
-          currentRoom: {
-            id: roomId,
-            mode: defaultMode,
-            hostId: 'current-user',
-            participants: [
-              {
-                userId: 'peer-1',
-                displayName: 'Sarah Jenkins',
-                username: 'sarah_pm',
-                avatarUrl: null,
-                isMuted: false,
-                isVideoEnabled: true,
-                isSpeaking: true,
-                isHost: false,
-                joinedAt: new Date().toISOString(),
-              },
-              {
-                userId: 'peer-2',
-                displayName: 'Marcus Vance',
-                username: 'marcus_eng',
-                avatarUrl: null,
-                isMuted: true,
-                isVideoEnabled: false,
-                isSpeaking: false,
-                isHost: false,
-                joinedAt: new Date().toISOString(),
-              },
-            ],
-            createdAt: new Date().toISOString(),
-          },
-          activeMode: defaultMode,
-          participants: [
-            {
-              userId: 'peer-1',
-              displayName: 'Sarah Jenkins',
-              username: 'sarah_pm',
-              avatarUrl: null,
-              isMuted: false,
-              isVideoEnabled: true,
-              isSpeaking: true,
-              isHost: false,
-              joinedAt: new Date().toISOString(),
-            },
-            {
-              userId: 'peer-2',
-              displayName: 'Marcus Vance',
-              username: 'marcus_eng',
-              avatarUrl: null,
-              isMuted: true,
-              isVideoEnabled: false,
-              isSpeaking: false,
-              isHost: false,
-              joinedAt: new Date().toISOString(),
-            },
-          ],
-          isJoined: true,
-          isLoading: false,
-        });
+        set({ isLoading: false });
       }
     } catch {
-      set({
-        currentRoom: {
-          id: roomId,
-          mode: defaultMode,
-          hostId: 'current-user',
-          participants: [
-            {
-              userId: 'peer-1',
-              displayName: 'Sarah Jenkins',
-              username: 'sarah_pm',
-              avatarUrl: null,
-              isMuted: false,
-              isVideoEnabled: true,
-              isSpeaking: true,
-              isHost: false,
-              joinedAt: new Date().toISOString(),
-            },
-            {
-              userId: 'peer-2',
-              displayName: 'Marcus Vance',
-              username: 'marcus_eng',
-              avatarUrl: null,
-              isMuted: true,
-              isVideoEnabled: false,
-              isSpeaking: false,
-              isHost: false,
-              joinedAt: new Date().toISOString(),
-            },
-          ],
-          createdAt: new Date().toISOString(),
-        },
-        activeMode: defaultMode,
-        participants: [
-          {
-            userId: 'peer-1',
-            displayName: 'Sarah Jenkins',
-            username: 'sarah_pm',
-            avatarUrl: null,
-            isMuted: false,
-            isVideoEnabled: true,
-            isSpeaking: true,
-            isHost: false,
-            joinedAt: new Date().toISOString(),
-          },
-          {
-            userId: 'peer-2',
-            displayName: 'Marcus Vance',
-            username: 'marcus_eng',
-            avatarUrl: null,
-            isMuted: true,
-            isVideoEnabled: false,
-            isSpeaking: false,
-            isHost: false,
-            joinedAt: new Date().toISOString(),
-          },
-        ],
-        isJoined: true,
-        isLoading: false,
-      });
+      set({ isLoading: false });
     }
   },
 

@@ -73,26 +73,34 @@ export default function ChannelsScreen() {
   const voiceChannels = channels.filter((c) => c.type === 'VOICE');
   const stageChannels = channels.filter((c) => c.type === 'STAGE');
 
+  const hasLoadedChannels = channels.length > 0;
+
   // Fallback demo data if backend hasn't populated yet
   const displayCommunities = communities.length > 0 ? communities : [
     { id: 'comm-1', name: 'Engineering Core', slug: 'eng-core', ownerId: '1', createdAt: '' },
     { id: 'comm-2', name: 'Product & Design', slug: 'product', ownerId: '1', createdAt: '' },
   ];
 
-  const displayTextChannels = textChannels.length > 0 ? textChannels : [
-    { id: 'chan-gen', communityId: 'comm-1', name: 'general', type: 'TEXT' as const, position: 0, createdAt: '' },
-    { id: 'chan-dev', communityId: 'comm-1', name: 'dev-chat', type: 'TEXT' as const, position: 1, createdAt: '' },
-    { id: 'chan-ann', communityId: 'comm-1', name: 'announcements', type: 'ANNOUNCEMENT' as const, position: 2, createdAt: '' },
-  ];
+  const displayTextChannels = hasLoadedChannels
+    ? textChannels
+    : [
+        { id: 'chan-gen', communityId: 'comm-1', name: 'general', type: 'TEXT' as const, position: 0, createdAt: '' },
+        { id: 'chan-dev', communityId: 'comm-1', name: 'dev-chat', type: 'TEXT' as const, position: 1, createdAt: '' },
+        { id: 'chan-ann', communityId: 'comm-1', name: 'announcements', type: 'ANNOUNCEMENT' as const, position: 2, createdAt: '' },
+      ];
 
-  const displayVoiceChannels = voiceChannels.length > 0 ? voiceChannels : [
-    { id: 'chan-voice-1', communityId: 'comm-1', name: 'Daily Standup Huddle', type: 'VOICE' as const, position: 3, createdAt: '' },
-    { id: 'chan-voice-2', communityId: 'comm-1', name: 'Watercooler Voice', type: 'VOICE' as const, position: 4, createdAt: '' },
-  ];
+  const displayVoiceChannels = hasLoadedChannels
+    ? voiceChannels
+    : [
+        { id: 'chan-voice-1', communityId: 'comm-1', name: 'Daily Standup Huddle', type: 'VOICE' as const, position: 3, createdAt: '' },
+        { id: 'chan-voice-2', communityId: 'comm-1', name: 'Watercooler Voice', type: 'VOICE' as const, position: 4, createdAt: '' },
+      ];
 
-  const displayStageChannels = stageChannels.length > 0 ? stageChannels : [
-    { id: 'chan-stage-1', communityId: 'comm-1', name: 'All-Hands Townhall', type: 'STAGE' as const, position: 5, createdAt: '' },
-  ];
+  const displayStageChannels = hasLoadedChannels
+    ? stageChannels
+    : [
+        { id: 'chan-stage-1', communityId: 'comm-1', name: 'All-Hands Townhall', type: 'STAGE' as const, position: 5, createdAt: '' },
+      ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -153,75 +161,81 @@ export default function ChannelsScreen() {
         }
       >
         {/* TEXT CHANNELS SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>TEXT CHANNELS</Text>
-          {displayTextChannels.map((c) => (
-            <TouchableOpacity
-              key={c.id}
-              testID={`channel-row-${c.id}`}
-              style={styles.channelRow}
-              onPress={() => handleOpenChannel(c as ChannelDTO)}
-            >
-              <View style={styles.channelLeft}>
-                <Hash size={18} color={THEME.colors.textMuted} />
-                <Text style={styles.channelName}>{c.name}</Text>
-              </View>
-              <ChevronRight size={18} color={THEME.colors.borderLight} />
-            </TouchableOpacity>
-          ))}
-        </View>
+        {displayTextChannels.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>TEXT CHANNELS</Text>
+            {displayTextChannels.map((c) => (
+              <TouchableOpacity
+                key={c.id}
+                testID={`channel-row-${c.id}`}
+                style={styles.channelRow}
+                onPress={() => handleOpenChannel(c as ChannelDTO)}
+              >
+                <View style={styles.channelLeft}>
+                  <Hash size={18} color={THEME.colors.textMuted} />
+                  <Text style={styles.channelName}>{c.name}</Text>
+                </View>
+                <ChevronRight size={18} color={THEME.colors.borderLight} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* VOICE HUDDLES SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>VOICE HUDDLES & STAGES</Text>
-          {displayVoiceChannels.map((c) => (
-            <TouchableOpacity
-              key={c.id}
-              testID={`channel-row-${c.id}`}
-              style={[styles.channelRow, styles.voiceRow]}
-              onPress={() => handleJoinVoiceOrStage(c as ChannelDTO)}
-            >
-              <View style={styles.channelLeft}>
-                <View style={styles.voiceIconBg}>
-                  <Volume2 size={16} color={THEME.colors.accentGreen} />
+        {displayVoiceChannels.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>VOICE HUDDLES & STAGES</Text>
+            {displayVoiceChannels.map((c) => (
+              <TouchableOpacity
+                key={c.id}
+                testID={`channel-row-${c.id}`}
+                style={[styles.channelRow, styles.voiceRow]}
+                onPress={() => handleJoinVoiceOrStage(c as ChannelDTO)}
+              >
+                <View style={styles.channelLeft}>
+                  <View style={styles.voiceIconBg}>
+                    <Volume2 size={16} color={THEME.colors.accentGreen} />
+                  </View>
+                  <View>
+                    <Text style={styles.channelName}>{c.name}</Text>
+                    <Text style={styles.voiceSub}>Tap to jump in voice room</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.channelName}>{c.name}</Text>
-                  <Text style={styles.voiceSub}>Tap to jump in voice room</Text>
+                <View style={styles.joinTag}>
+                  <Text style={styles.joinTagText}>JOIN</Text>
                 </View>
-              </View>
-              <View style={styles.joinTag}>
-                <Text style={styles.joinTagText}>JOIN</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* LIVE BROADCAST / STAGE SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>INTERACTIVE LIVE STAGES</Text>
-          {displayStageChannels.map((c) => (
-            <TouchableOpacity
-              key={c.id}
-              testID={`channel-row-${c.id}`}
-              style={[styles.channelRow, styles.stageRow]}
-              onPress={() => handleJoinVoiceOrStage(c as ChannelDTO)}
-            >
-              <View style={styles.channelLeft}>
-                <View style={styles.stageIconBg}>
-                  <Radio size={16} color={THEME.colors.accentCyan} />
+        {displayStageChannels.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>INTERACTIVE LIVE STAGES</Text>
+            {displayStageChannels.map((c) => (
+              <TouchableOpacity
+                key={c.id}
+                testID={`channel-row-${c.id}`}
+                style={[styles.channelRow, styles.stageRow]}
+                onPress={() => handleJoinVoiceOrStage(c as ChannelDTO)}
+              >
+                <View style={styles.channelLeft}>
+                  <View style={styles.stageIconBg}>
+                    <Radio size={16} color={THEME.colors.accentCyan} />
+                  </View>
+                  <View>
+                    <Text style={styles.channelName}>{c.name}</Text>
+                    <Text style={styles.stageSub}>Multi-participant video stage</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.channelName}>{c.name}</Text>
-                  <Text style={styles.stageSub}>Multi-participant video stage</Text>
+                <View style={styles.liveBadge}>
+                  <Text style={styles.liveBadgeText}>STAGE</Text>
                 </View>
-              </View>
-              <View style={styles.liveBadge}>
-                <Text style={styles.liveBadgeText}>STAGE</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

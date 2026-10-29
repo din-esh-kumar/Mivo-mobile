@@ -1,19 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../../src/constants/theme';
 import { useRoomStore } from '../../src/stores/useRoomStore';
 import { useAuthStore } from '../../src/stores/useAuthStore';
+import { useConversationStore } from '../../src/stores/useConversationStore';
 import { ParticipantTile } from '../../src/components/ParticipantTile';
 import { ModeSelector } from '../../src/components/ModeSelector';
+import { MessageBubble } from '../../src/components/MessageBubble';
+import { Avatar } from '../../src/components/Avatar';
 import { RoomCommunicationMode } from '../../src/types';
 import {
   Mic,
@@ -25,6 +30,7 @@ import {
   MessageSquare,
   Users,
   Volume2,
+  Send,
 } from 'lucide-react-native';
 
 export default function RoomStageScreen() {
@@ -52,6 +58,8 @@ export default function RoomStageScreen() {
     setMode,
   } = useRoomStore();
 
+  const { messages, loadChannelMessages, sendMessage } = useConversationStore();
+  const [chatInput, setChatInput] = useState('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -63,9 +71,20 @@ export default function RoomStageScreen() {
 
     return () => {
       clearInterval(interval);
-      leaveRoom();
     };
   }, [roomId]);
+
+  useEffect(() => {
+    if (activeMode === 'TEXT') {
+      loadChannelMessages(roomId);
+    }
+  }, [activeMode, roomId]);
+
+  const handleSendText = () => {
+    if (!chatInput.trim()) return;
+    sendMessage(roomId, chatInput.trim(), false);
+    setChatInput('');
+  };
 
   const handleLeave = () => {
     leaveRoom();
@@ -131,21 +150,90 @@ export default function RoomStageScreen() {
         />
       </View>
 
-      {/* Participants Video / Audio Grid */}
-      <ScrollView
-        contentContainerStyle={styles.gridContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.grid}>
-          {allParticipants.map((member) => (
-            <ParticipantTile
-              key={member.userId}
-              member={member}
-              isCurrentUser={member.userId === currentUser?.id || member.userId === 'me'}
+      {/* Participants Content: Video/Audio Grid OR Inline Room Discussion */}
+      {activeMode === 'TEXT' ? (
+        <View style={styles.inlineChatContainer}>
+          {/* Active Audio strip */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.audioStripContent}
+            style={styles.audioStrip}
+          >
+            {allParticipants.map((member) => (
+              <View key={member.userId} style={styles.audioStripItem}>
+                <Avatar url={member.avatarUrl} name={member.displayName} size={32} />
+                <Text style={styles.stripName} numberOfLines={1}>
+                  {member.displayName}
+                </Text>
+                {member.isMuted && <MicOff size={11} color="#EF4444" />}
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* Messages list */}
+          <ScrollView
+            contentContainerStyle={styles.inlineMessagesList}
+            showsVerticalScrollIndicator={false}
+          >
+            {(messages[roomId] || []).length > 0 ? (
+              (messages[roomId] || []).map((msg) => (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  isCurrentUser={msg.authorId === currentUser?.id}
+                />
+              ))
+            ) : (
+              <View style={styles.emptyInlineBox}>
+                <Text style={styles.emptyInlineTitle}>Stage Discussion</Text>
+                <Text style={styles.emptyInlineSub}>
+                  No text messages yet in #{roomName}. Type below to discuss while keeping audio live!
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Inline Input Box */}
+          <View style={styles.inlineInputArea}>
+            <TextInput
+              testID="inline-chat-input"
+              placeholder={`Message #${roomName} while on stage...`}
+              placeholderTextColor={THEME.colors.textMuted}
+              value={chatInput}
+              onChangeText={setChatInput}
+              style={styles.inlineTextInput}
             />
-          ))}
+            <TouchableOpacity
+              testID="inline-chat-send-btn"
+              style={[
+                styles.inlineSendBtn,
+                chatInput.trim().length > 0 && styles.inlineSendBtnActive,
+              ]}
+              onPress={handleSendText}
+              disabled={!chatInput.trim()}
+            >
+              <Send size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
+      ) : (
+        /* Participants Video / Audio Grid */
+        <ScrollView
+          contentContainerStyle={styles.gridContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.grid}>
+            {allParticipants.map((member) => (
+              <ParticipantTile
+                key={member.userId}
+                member={member}
+                isCurrentUser={member.userId === currentUser?.id || member.userId === 'me'}
+              />
+            ))}
+          </View>
+        </ScrollView>
+      )}
 
       {/* Bottom Media Controls Dock */}
       <View style={styles.controlsDock}>
@@ -338,6 +426,91 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 4,
+  },
+  inlineChatContainer: {
+    flex: 1,
+    paddingBottom: 85,
+  },
+  audioStrip: {
+    maxHeight: 60,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.border,
+    backgroundColor: THEME.colors.surface,
+  },
+  audioStripContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 12,
+    alignItems: 'center',
+  },
+  audioStripItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.surfaceElevated,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: THEME.borderRadius.full,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  stripName: {
+    color: THEME.colors.textPrimary,
+    fontSize: 12,
+    fontWeight: '500',
+    maxWidth: 80,
+  },
+  inlineMessagesList: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexGrow: 1,
+  },
+  emptyInlineBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 40,
+    paddingHorizontal: 24,
+  },
+  emptyInlineTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+    marginBottom: 6,
+  },
+  emptyInlineSub: {
+    fontSize: 13,
+    color: THEME.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  inlineInputArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 12,
+    borderRadius: THEME.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    gap: 8,
+  },
+  inlineTextInput: {
+    flex: 1,
+    color: THEME.colors.textPrimary,
+    fontSize: 14,
+    paddingVertical: 4,
+  },
+  inlineSendBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: THEME.colors.surfaceHover,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineSendBtnActive: {
+    backgroundColor: THEME.colors.primary,
   },
 });
 

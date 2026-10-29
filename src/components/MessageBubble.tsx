@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { THEME } from '../constants/theme';
 import { ChatMessageDTO } from '../types';
 import { Avatar } from './Avatar';
@@ -15,8 +15,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isCurrentUser,
   onReply,
 }) => {
+  const [isClient, setIsClient] = useState(Platform.OS !== 'web');
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const formatTime = (iso?: string) => {
-    if (!iso) return '';
+    if (!iso || !isClient) return '';
     try {
       const d = new Date(iso);
       if (isNaN(d.getTime())) return '';

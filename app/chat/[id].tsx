@@ -107,7 +107,8 @@ export default function ChatScreen() {
   const handleSend = () => {
     if (!inputContent.trim()) return;
 
-    sendMessage(id, inputContent.trim(), isDm, replyingTo?.id);
+    const replyId = replyingTo && replyingTo.id !== 'welcome-msg' ? replyingTo.id : undefined;
+    sendMessage(id, inputContent.trim(), isDm, replyId);
     setInputContent('');
     setReplyingTo(null);
 
@@ -173,7 +174,7 @@ export default function ChatScreen() {
             <MessageBubble
               message={item}
               isCurrentUser={item.authorId === currentUser?.id}
-              onReply={(msg) => setReplyingTo(msg)}
+              onReply={item.id !== 'welcome-msg' ? (msg) => setReplyingTo(msg) : undefined}
             />
           )}
         />

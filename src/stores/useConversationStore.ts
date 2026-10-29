@@ -274,10 +274,15 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       });
     });
 
+    const typingTimers: Record<string, NodeJS.Timeout> = {};
+
     const unsubTypingChat = socketClient.on(
       REALTIME_EVENTS.CHAT_TYPING,
       (data: { channelId: string; username: string }) => {
         if (!data?.channelId || !data?.username) return;
+        const key = `chan-${data.channelId}-${data.username}`;
+        if (typingTimers[key]) clearTimeout(typingTimers[key]);
+
         set((state) => {
           const current = state.typingUsers[data.channelId] || [];
           if (current.includes(data.username)) return state;
@@ -288,6 +293,39 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
             },
           };
         });
+
+        // Auto-expire typing indicator after 3.5 seconds
+        typingTimers[key] = setTimeout(() => {
+          delete typingTimers[key];
+          set((state) => ({
+            typingUsers: {
+              ...state.typingUsers,
+              [data.channelId]: (state.typingUsers[data.channelId] || []).filter(
+                (u) => u !== data.username
+              ),
+            },
+          }));
+        }, 3500);
+      }
+    );
+
+    const unsubStopTypingChat = socketClient.on(
+      REALTIME_EVENTS.CHAT_STOP_TYPING,
+      (data: { channelId: string; username: string }) => {
+        if (!data?.channelId || !data?.username) return;
+        const key = `chan-${data.channelId}-${data.username}`;
+        if (typingTimers[key]) {
+          clearTimeout(typingTimers[key]);
+          delete typingTimers[key];
+        }
+        set((state) => ({
+          typingUsers: {
+            ...state.typingUsers,
+            [data.channelId]: (state.typingUsers[data.channelId] || []).filter(
+              (u) => u !== data.username
+            ),
+          },
+        }));
       }
     );
 
@@ -295,6 +333,9 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       REALTIME_EVENTS.DM_TYPING,
       (data: { conversationId: string; username: string }) => {
         if (!data?.conversationId || !data?.username) return;
+        const key = `dm-${data.conversationId}-${data.username}`;
+        if (typingTimers[key]) clearTimeout(typingTimers[key]);
+
         set((state) => {
           const current = state.typingUsers[data.conversationId] || [];
           if (current.includes(data.username)) return state;
@@ -305,6 +346,39 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
             },
           };
         });
+
+        // Auto-expire typing indicator after 3.5 seconds
+        typingTimers[key] = setTimeout(() => {
+          delete typingTimers[key];
+          set((state) => ({
+            typingUsers: {
+              ...state.typingUsers,
+              [data.conversationId]: (state.typingUsers[data.conversationId] || []).filter(
+                (u) => u !== data.username
+              ),
+            },
+          }));
+        }, 3500);
+      }
+    );
+
+    const unsubStopTypingDm = socketClient.on(
+      REALTIME_EVENTS.DM_STOP_TYPING,
+      (data: { conversationId: string; username: string }) => {
+        if (!data?.conversationId || !data?.username) return;
+        const key = `dm-${data.conversationId}-${data.username}`;
+        if (typingTimers[key]) {
+          clearTimeout(typingTimers[key]);
+          delete typingTimers[key];
+        }
+        set((state) => ({
+          typingUsers: {
+            ...state.typingUsers,
+            [data.conversationId]: (state.typingUsers[data.conversationId] || []).filter(
+              (u) => u !== data.username
+            ),
+          },
+        }));
       }
     );
 
@@ -312,7 +386,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       unsubDm();
       unsubChat();
       unsubTypingChat();
+      unsubStopTypingChat();
       unsubTypingDm();
+      unsubStopTypingDm();
+      Object.values(typingTimers).forEach(clearTimeout);
     };
   },
 }));

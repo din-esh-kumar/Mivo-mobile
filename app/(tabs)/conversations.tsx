@@ -8,6 +8,7 @@ import {
   RefreshControl,
   TextInput,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +18,7 @@ import { useAuthStore } from '../../src/stores/useAuthStore';
 import { ConversationDTO, UserSummaryDTO } from '../../src/types';
 import { Avatar } from '../../src/components/Avatar';
 import { Search, Plus, MessageSquare } from 'lucide-react-native';
+import { showCrossPlatformPrompt, showCrossPlatformAlert } from '../../src/utils/dialog';
 
 export default function ConversationsScreen() {
   const router = useRouter();
@@ -26,8 +28,10 @@ export default function ConversationsScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isClient, setIsClient] = useState(Platform.OS !== 'web');
 
   useEffect(() => {
+    setIsClient(true);
     loadConversations();
   }, []);
 
@@ -38,7 +42,7 @@ export default function ConversationsScreen() {
   };
 
   const formatMessageTime = (iso?: string | null) => {
-    if (!iso) return '';
+    if (!iso || !isClient) return '';
     try {
       const d = new Date(iso);
       if (isNaN(d.getTime())) return '';
@@ -64,59 +68,86 @@ export default function ConversationsScreen() {
   };
 
   const handleNewChat = () => {
-    Alert.prompt
-      ? Alert.prompt(
-          'Start Direct Message',
-          'Enter username or user ID to chat with:',
-          async (text) => {
-            if (!text?.trim()) return;
-            const res = await createDirectConversation(text.trim());
-            if (res.success && res.data) {
-              handleOpenConversation(res.data);
-            } else {
-              Alert.alert('Notice', res.error || 'Starting local chat room');
-            }
-          }
-        )
-      : Alert.alert(
-          'Start Direct Message',
-          'Choose a contact to begin a conversation:',
-          [
-            {
-              text: 'Elena Rostova (Lead AI)',
-              onPress: async () => {
-                const sampleDm: ConversationDTO = {
-                  id: 'dm-elena-' + Date.now().toString(36),
-                  type: 'DIRECT',
-                  participants: [
-                    {
-                      id: 'p-elena',
-                      userId: 'user-elena',
-                      user: {
-                        id: 'user-elena',
-                        username: 'elena_ai',
-                        displayName: 'Elena Rostova',
-                        status: 'ONLINE',
-                      },
-                      joinedAt: new Date().toISOString(),
-                    },
-                  ],
-                  lastMessage: {
-                    id: 'm-elena-1',
-                    authorId: 'user-elena',
-                    author: { id: 'user-elena', username: 'elena_ai', displayName: 'Elena Rostova' },
-                    content: 'Hi! Let me know if you need to test the real-time audio stage.',
-                    createdAt: new Date().toISOString(),
-                  },
-                  unreadCount: 1,
-                  createdAt: new Date().toISOString(),
-                };
-                handleOpenConversation(sampleDm);
+    showCrossPlatformPrompt(
+      'Start Direct Message',
+      'Enter username or user ID to chat with (or select a recommended team contact):',
+      async (text) => {
+        if (!text?.trim()) return;
+        const res = await createDirectConversation(text.trim());
+        if (res.success && res.data) {
+          handleOpenConversation(res.data);
+        } else {
+          // If server fails or offline, create a local direct conversation
+          const localDm: ConversationDTO = {
+            id: 'dm-' + text.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now().toString(36),
+            type: 'DIRECT',
+            participants: [
+              {
+                id: 'p-' + text.toLowerCase(),
+                userId: 'user-' + text.toLowerCase(),
+                user: {
+                  id: 'user-' + text.toLowerCase(),
+                  username: text.toLowerCase().replace(/\s+/g, '_'),
+                  displayName: text,
+                  status: 'ONLINE',
+                },
+                joinedAt: new Date().toISOString(),
               },
+            ],
+            lastMessage: {
+              id: 'm-init-' + Date.now(),
+              authorId: 'user-' + text.toLowerCase(),
+              author: { id: 'user-' + text.toLowerCase(), username: text.toLowerCase(), displayName: text },
+              content: 'Direct message channel initiated.',
+              createdAt: new Date().toISOString(),
             },
-            { text: 'Cancel', style: 'cancel' },
-          ]
-        );
+            unreadCount: 0,
+            createdAt: new Date().toISOString(),
+          };
+          useConversationStore.setState((state) => ({
+            conversations: [localDm, ...state.conversations.filter((c) => c.id !== localDm.id)],
+          }));
+          handleOpenConversation(localDm);
+        }
+      },
+      [
+        {
+          text: 'Elena Rostova (Lead AI)',
+          onPress: async () => {
+            const sampleDm: ConversationDTO = {
+              id: 'dm-elena-' + Date.now().toString(36),
+              type: 'DIRECT',
+              participants: [
+                {
+                  id: 'p-elena',
+                  userId: 'user-elena',
+                  user: {
+                    id: 'user-elena',
+                    username: 'elena_ai',
+                    displayName: 'Elena Rostova',
+                    status: 'ONLINE',
+                  },
+                  joinedAt: new Date().toISOString(),
+                },
+              ],
+              lastMessage: {
+                id: 'm-elena-1',
+                authorId: 'user-elena',
+                author: { id: 'user-elena', username: 'elena_ai', displayName: 'Elena Rostova' },
+                content: 'Hi! Let me know if you need to test the real-time audio stage.',
+                createdAt: new Date().toISOString(),
+              },
+              unreadCount: 1,
+              createdAt: new Date().toISOString(),
+            };
+            useConversationStore.setState((state) => ({
+              conversations: [sampleDm, ...state.conversations.filter((c) => c.id !== sampleDm.id)],
+            }));
+            handleOpenConversation(sampleDm);
+          },
+        },
+      ]
+    );
   };
 
   const filteredConversations = conversations.filter((c) => {

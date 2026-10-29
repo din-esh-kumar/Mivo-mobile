@@ -16,6 +16,7 @@ import { useAuthStore } from '../../src/stores/useAuthStore';
 import { Avatar } from '../../src/components/Avatar';
 import { UserStatus } from '../../src/types';
 import { STORAGE_KEYS } from '../../src/api/api-client';
+import { showCrossPlatformAlert } from '../../src/utils/dialog';
 import {
   Server,
   LogOut,
@@ -65,7 +66,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out of Mivo?', [
+    showCrossPlatformAlert('Sign Out', 'Are you sure you want to sign out of Mivo?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',

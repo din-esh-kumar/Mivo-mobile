@@ -12,6 +12,7 @@ interface AuthState {
   isInitialized: boolean;
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   register: (payload: { email: string; username: string; displayName: string; password: string }) => Promise<{ success: boolean; error?: string }>;
+  loginAsGuest: (displayName?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
   updateStatus: (status: 'ONLINE' | 'IDLE' | 'DND' | 'OFFLINE', customStatus?: string) => Promise<void>;
@@ -54,12 +55,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await authApi.login(email, password);
       if (res.success && res.data) {
-        const { user, tokens } = res.data;
-        api.setAccessToken(tokens.accessToken);
+        const token = res.data.accessToken || res.data.tokens?.accessToken;
+        const user = res.data.user;
+        if (!token) {
+          set({ isLoading: false });
+          return { success: false, error: 'No access token received from server' };
+        }
+        api.setAccessToken(token);
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
         
-        set({ user, token: tokens.accessToken, isLoading: false });
-        socketClient.connect(tokens.accessToken);
+        set({ user, token, isLoading: false });
+        socketClient.connect(token);
         return { success: true };
       }
       set({ isLoading: false });
@@ -75,12 +81,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await authApi.register(payload);
       if (res.success && res.data) {
-        const { user, tokens } = res.data;
-        api.setAccessToken(tokens.accessToken);
+        const token = res.data.accessToken || res.data.tokens?.accessToken;
+        const user = res.data.user;
+        if (!token) {
+          set({ isLoading: false });
+          return { success: false, error: 'No access token received from server' };
+        }
+        api.setAccessToken(token);
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
-        set({ user, token: tokens.accessToken, isLoading: false });
-        socketClient.connect(tokens.accessToken);
+        set({ user, token, isLoading: false });
+        socketClient.connect(token);
         return { success: true };
       }
       set({ isLoading: false });
@@ -88,6 +99,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err: any) {
       set({ isLoading: false });
       return { success: false, error: err.message || 'Registration failed' };
+    }
+  },
+
+  loginAsGuest: async (displayName?: string) => {
+    set({ isLoading: true });
+    try {
+      const res = await authApi.guestLogin(displayName);
+      if (res.success && res.data) {
+        const token = res.data.accessToken || res.data.tokens?.accessToken;
+        const user = res.data.user;
+        if (!token) {
+          set({ isLoading: false });
+          return { success: false, error: 'No access token received from server' };
+        }
+        api.setAccessToken(token);
+        await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+
+        set({ user, token, isLoading: false });
+        socketClient.connect(token);
+        return { success: true };
+      }
+      set({ isLoading: false });
+      return { success: false, error: res.error?.message || 'Guest demo creation failed' };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return { success: false, error: err.message || 'Guest demo creation failed' };
     }
   },
 

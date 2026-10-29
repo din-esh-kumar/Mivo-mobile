@@ -19,7 +19,7 @@ import { Mail, Lock, Radio, Server } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isLoading } = useAuthStore();
+  const { login, loginAsGuest, isLoading } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,12 +42,23 @@ export default function LoginScreen() {
   };
 
   const handleGuestDemo = async () => {
-    // Quick fill for testing
+    setError(null);
+
+    // 1. Try dynamic guest creation directly via /auth/guest
+    const guestRes = await loginAsGuest('Demo User');
+    if (guestRes.success) {
+      router.replace('/(tabs)');
+      return;
+    }
+
+    // 2. Fallback to pre-seeded demo account
     setEmail('alex@mivo.app');
     setPassword('Password123!');
-    const result = await login('alex@mivo.app', 'Password123!');
-    if (result.success) {
+    const seedRes = await login('alex@mivo.app', 'Password123!');
+    if (seedRes.success) {
       router.replace('/(tabs)');
+    } else {
+      setError(guestRes.error || seedRes.error || 'Failed to create demo session');
     }
   };
 

@@ -15,6 +15,12 @@ export const authApi = {
     return api.post<AuthResponseDTO>('/auth/register', payload);
   },
 
+  guestLogin: async (displayName?: string) => {
+    return api.post<AuthResponseDTO>('/auth/guest', {
+      displayName: displayName || 'Demo User',
+    });
+  },
+
   getCurrentUser: async () => {
     return api.get<UserProfileDTO>('/auth/me');
   },

@@ -34,7 +34,7 @@ export interface UserProfileDTO extends UserSummaryDTO {
   email: string;
   bio?: string | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface AuthTokensDTO {
@@ -45,7 +45,9 @@ export interface AuthTokensDTO {
 
 export interface AuthResponseDTO {
   user: UserProfileDTO;
-  tokens: AuthTokensDTO;
+  accessToken: string;
+  tokens?: AuthTokensDTO;
+  isGuest?: boolean;
 }
 
 export interface CommunityDTO {

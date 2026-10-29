@@ -1,0 +1,14 @@
+appId: com.wysbryx.mivo
+---
+# ==========================================
+# Mivo Mobile Full Maestro End-to-End Regression Suite
+# Covers: Auth, Channels, Stages, Mode Morphing, DMs, Activity, Profile & Settings
+# ==========================================
+
+- runFlow: flows/01_auth_flow.yaml
+- runFlow: flows/02_communities_channels_flow.yaml
+- runFlow: flows/03_room_stage_morphing_flow.yaml
+- runFlow: flows/04_direct_messaging_flow.yaml
+- runFlow: flows/05_activities_alerts_flow.yaml
+- runFlow: flows/06_profile_settings_flow.yaml
+

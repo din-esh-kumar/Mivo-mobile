@@ -34,14 +34,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const user = JSON.parse(userJson);
         set({ user, token, isInitialized: true });
         socketClient.connect(token);
-        
+
         // Refresh profile in background
-        authApi.getCurrentUser().then((res) => {
+        authApi.getCurrentUser().then(async (res) => {
           if (res.success && res.data) {
             set({ user: res.data });
-            AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(res.data));
+            await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(res.data));
+          } else if (
+            res.error?.code === 'UNAUTHORIZED' ||
+            (res.error?.code === 'HTTP_ERROR' && res.error?.message?.includes('401'))
+          ) {
+            // Token expired or invalid on backend
+            await get().logout();
           }
-        });
+        }).catch(() => {});
       } else {
         set({ isInitialized: true });
       }
@@ -105,7 +111,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loginAsGuest: async (displayName?: string) => {
     set({ isLoading: true });
     try {
-      const res = await authApi.guestLogin(displayName);
+      const name = displayName?.trim() || 'Demo User';
+      const res = await authApi.guestLogin(name);
       if (res.success && res.data) {
         const token = res.data.accessToken || res.data.tokens?.accessToken;
         const user = res.data.user;
@@ -120,11 +127,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         socketClient.connect(token);
         return { success: true };
       }
-      set({ isLoading: false });
-      return { success: false, error: res.error?.message || 'Guest demo creation failed' };
-    } catch (err: any) {
-      set({ isLoading: false });
-      return { success: false, error: err.message || 'Guest demo creation failed' };
+
+      // If backend responded with error or server is unreachable, fall back to offline demo session
+      const offlineGuest: UserProfileDTO = {
+        id: 'guest-' + Math.random().toString(36).substring(2, 9),
+        username: name.toLowerCase().replace(/\s+/g, '_'),
+        displayName: name,
+        email: `${name.toLowerCase().replace(/\s+/g, '')}@mivo.local`,
+        status: 'ONLINE',
+        createdAt: new Date().toISOString(),
+      };
+      const offlineToken = 'mivo-demo-guest-token';
+      api.setAccessToken(offlineToken);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(offlineGuest));
+
+      set({ user: offlineGuest, token: offlineToken, isLoading: false });
+      socketClient.connect(offlineToken);
+      return { success: true };
+    } catch {
+      const name = displayName?.trim() || 'Demo User';
+      const offlineGuest: UserProfileDTO = {
+        id: 'guest-' + Math.random().toString(36).substring(2, 9),
+        username: 'demo_user',
+        displayName: name,
+        email: 'demo@mivo.local',
+        status: 'ONLINE',
+        createdAt: new Date().toISOString(),
+      };
+      const offlineToken = 'mivo-demo-guest-token';
+      api.setAccessToken(offlineToken);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(offlineGuest));
+
+      set({ user: offlineGuest, token: offlineToken, isLoading: false });
+      socketClient.connect(offlineToken);
+      return { success: true };
     }
   },
 

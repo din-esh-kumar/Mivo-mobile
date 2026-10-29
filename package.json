@@ -10,7 +10,11 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc --noEmit",
+    "test": "tsx --test __tests__/**/*.test.ts",
+    "test:jest": "jest",
+    "test:all": "pnpm test && pnpm test:jest",
+    "test:maestro": "maestro test .maestro/full_regression_suite.yaml"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.15",
@@ -41,8 +45,14 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@testing-library/react-native": "^14.1.0",
+    "@types/jest": "^30.0.0",
     "@types/react": "^19.1.1",
+    "jest": "^30.5.2",
+    "jest-expo": "^58.0.13",
     "only-allow": "^1.2.2",
+    "react-test-renderer": "19.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.3.3"
   },
   "private": true

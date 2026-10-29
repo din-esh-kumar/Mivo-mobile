@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEME } from '../../src/constants/theme';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { Avatar } from '../../src/components/Avatar';
 import { UserStatus } from '../../src/types';
+import { STORAGE_KEYS } from '../../src/api/api-client';
 import {
   Server,
   LogOut,
@@ -31,6 +33,25 @@ export default function ProfileScreen() {
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEYS.SOUND_ENABLED).then((val) => {
+      if (val !== null) setSoundEnabled(val === 'true');
+    });
+    AsyncStorage.getItem(STORAGE_KEYS.HAPTICS_ENABLED).then((val) => {
+      if (val !== null) setHapticsEnabled(val === 'true');
+    });
+  }, []);
+
+  const handleToggleSound = (val: boolean) => {
+    setSoundEnabled(val);
+    AsyncStorage.setItem(STORAGE_KEYS.SOUND_ENABLED, String(val)).catch(() => {});
+  };
+
+  const handleToggleHaptics = (val: boolean) => {
+    setHapticsEnabled(val);
+    AsyncStorage.setItem(STORAGE_KEYS.HAPTICS_ENABLED, String(val)).catch(() => {});
+  };
 
   const statuses: Array<{ status: UserStatus; label: string; color: string }> = [
     { status: 'ONLINE', label: 'Online', color: THEME.colors.statusOnline },
@@ -86,6 +107,7 @@ export default function ProfileScreen() {
               return (
                 <TouchableOpacity
                   key={item.status}
+                  testID={`status-${item.status}`}
                   style={styles.statusRow}
                   onPress={() => handleStatusChange(item.status)}
                 >
@@ -113,7 +135,7 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={soundEnabled}
-                onValueChange={setSoundEnabled}
+                onValueChange={handleToggleSound}
                 trackColor={{ false: '#334155', true: THEME.colors.primary }}
               />
             </View>
@@ -125,7 +147,7 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={hapticsEnabled}
-                onValueChange={setHapticsEnabled}
+                onValueChange={handleToggleHaptics}
                 trackColor={{ false: '#334155', true: THEME.colors.primary }}
               />
             </View>
@@ -137,6 +159,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>DEVELOPER & NETWORK</Text>
           <View style={styles.card}>
             <TouchableOpacity
+              testID="profile-server-settings-btn"
               style={styles.actionRow}
               onPress={() => router.push('/settings/server')}
             >
@@ -155,7 +178,11 @@ export default function ProfileScreen() {
         </View>
 
         {/* Sign Out */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <TouchableOpacity
+          testID="logout-btn"
+          style={styles.logoutBtn}
+          onPress={handleLogout}
+        >
           <LogOut size={18} color={THEME.colors.accentRed} />
           <Text style={styles.logoutText}>Sign Out of Mivo</Text>
         </TouchableOpacity>

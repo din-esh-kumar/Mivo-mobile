@@ -1,0 +1,48 @@
+appId: com.wysbryx.mivo
+---
+# ==========================================
+# Maestro Flow 03: Unified Stage Room & Mode Morphing
+# ==========================================
+
+- launchApp:
+    clearState: false
+
+# 1. Join Voice Huddle from Channels Screen
+- assertVisible: "VOICE HUDDLES & STAGES"
+- tapOn:
+    id: "channel-row-chan-voice-1"
+
+# 2. Verify Room Stage Presentation
+- assertVisible: "LIVE"
+- assertVisible: "Daily Standup Huddle"
+
+# 3. Test Morphing Communication Modes
+- tapOn:
+    id: "mode-pill-VIDEO"
+- tapOn:
+    id: "mode-pill-STREAM"
+- tapOn:
+    id: "mode-pill-VOICE"
+
+# 4. Test In-Call Media Controls
+- tapOn:
+    id: "toggle-mic-btn"
+- tapOn:
+    id: "toggle-mic-btn"
+- tapOn:
+    id: "toggle-video-btn"
+- tapOn:
+    id: "toggle-video-btn"
+
+# 5. Open In-Call Chat Overlay and Return
+- tapOn:
+    id: "in-call-chat-btn"
+- assertVisible: "#Daily Standup Huddle"
+- tapOn:
+    id: "chat-back-btn"
+
+# 6. Leave Room cleanly
+- tapOn:
+    id: "leave-room-btn"
+- assertVisible: "VOICE HUDDLES & STAGES"
+

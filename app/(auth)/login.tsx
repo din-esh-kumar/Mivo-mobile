@@ -32,7 +32,7 @@ export default function LoginScreen() {
     }
 
     setError(null);
-    const result = await login(email.trim(), password);
+    const result = await login(email.trim().toLowerCase(), password);
 
     if (result.success) {
       router.replace('/(tabs)');
@@ -74,6 +74,7 @@ export default function LoginScreen() {
         >
           {/* Top Server Config Icon */}
           <TouchableOpacity
+            testID="server-endpoint-btn"
             style={styles.serverBtn}
             onPress={() => router.push('/settings/server')}
           >
@@ -101,6 +102,7 @@ export default function LoginScreen() {
             )}
 
             <Input
+              testID="login-email-input"
               label="Email Address"
               placeholder="name@example.com"
               keyboardType="email-address"
@@ -111,6 +113,7 @@ export default function LoginScreen() {
             />
 
             <Input
+              testID="login-password-input"
               label="Password"
               placeholder="••••••••"
               isPassword
@@ -120,6 +123,7 @@ export default function LoginScreen() {
             />
 
             <Button
+              testID="sign-in-btn"
               title="Sign In"
               onPress={handleLogin}
               isLoading={isLoading}
@@ -128,6 +132,7 @@ export default function LoginScreen() {
             />
 
             <Button
+              testID="demo-user-btn"
               title="Explore as Demo User"
               onPress={handleGuestDemo}
               variant="outline"
@@ -139,7 +144,10 @@ export default function LoginScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+            <TouchableOpacity
+              testID="create-account-link"
+              onPress={() => router.push('/(auth)/register')}
+            >
               <Text style={styles.registerLink}> Create Account</Text>
             </TouchableOpacity>
           </View>

@@ -114,10 +114,13 @@ export default function ChannelsScreen() {
           contentContainerStyle={styles.communityScrollContent}
         >
           {displayCommunities.map((c) => {
-            const isSelected = activeCommunity?.id === c.id || (displayCommunities.length === 1);
+            const isSelected =
+              activeCommunity?.id === c.id ||
+              (!activeCommunity && displayCommunities[0]?.id === c.id);
             return (
               <TouchableOpacity
                 key={c.id}
+                testID={`community-pill-${c.id}`}
                 onPress={() => selectCommunity(c as any)}
                 style={[
                   styles.communityPill,
@@ -155,6 +158,7 @@ export default function ChannelsScreen() {
           {displayTextChannels.map((c) => (
             <TouchableOpacity
               key={c.id}
+              testID={`channel-row-${c.id}`}
               style={styles.channelRow}
               onPress={() => handleOpenChannel(c as ChannelDTO)}
             >
@@ -173,6 +177,7 @@ export default function ChannelsScreen() {
           {displayVoiceChannels.map((c) => (
             <TouchableOpacity
               key={c.id}
+              testID={`channel-row-${c.id}`}
               style={[styles.channelRow, styles.voiceRow]}
               onPress={() => handleJoinVoiceOrStage(c as ChannelDTO)}
             >
@@ -198,6 +203,7 @@ export default function ChannelsScreen() {
           {displayStageChannels.map((c) => (
             <TouchableOpacity
               key={c.id}
+              testID={`channel-row-${c.id}`}
               style={[styles.channelRow, styles.stageRow]}
               onPress={() => handleJoinVoiceOrStage(c as ChannelDTO)}
             >

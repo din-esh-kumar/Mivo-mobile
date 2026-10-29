@@ -15,6 +15,7 @@ import { THEME } from '../../src/constants/theme';
 import { useConversationStore } from '../../src/stores/useConversationStore';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { useRoomStore } from '../../src/stores/useRoomStore';
+import { socketClient } from '../../src/socket/socket-client';
 import { ChatMessageDTO } from '../../src/types';
 import { MessageBubble } from '../../src/components/MessageBubble';
 import {
@@ -40,31 +41,68 @@ export default function ChatScreen() {
   const isDm = params.type === 'dm';
 
   const currentUser = useAuthStore((s) => s.user);
-  const { messages, loadChannelMessages, selectConversation, sendMessage } =
-    useConversationStore();
+  const {
+    messages,
+    typingUsers,
+    loadChannelMessages,
+    loadConversationMessages,
+    sendMessage,
+    sendTyping,
+  } = useConversationStore();
   const joinRoom = useRoomStore((s) => s.joinRoom);
 
   const [inputContent, setInputContent] = useState('');
   const [replyingTo, setReplyingTo] = useState<ChatMessageDTO | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isDm) {
-      // select DM
+      loadConversationMessages(id);
+      socketClient.joinConversation(id);
+      return () => {
+        socketClient.leaveConversation(id);
+      };
     } else {
       loadChannelMessages(id);
+      socketClient.joinRoom(id);
+      return () => {
+        socketClient.leaveRoom(id);
+      };
     }
   }, [id, isDm]);
 
-  const chatMessages = messages[id] || [
-    {
-      id: 'welcome-msg',
-      authorId: 'system',
-      author: { id: 'sys', username: 'mivo_bot', displayName: 'Mivo System' },
-      content: `Welcome to the beginning of #${title}. Send a message to start collaborating!`,
-      createdAt: new Date().toISOString(),
-    },
-  ];
+  const activeTyping = (typingUsers[id] || []).filter(
+    (name) => name !== currentUser?.username && name !== currentUser?.displayName
+  );
+
+  const storedMessages = messages[id];
+  const chatMessages: ChatMessageDTO[] =
+    storedMessages && storedMessages.length > 0
+      ? storedMessages
+      : [
+          {
+            id: 'welcome-msg',
+            authorId: 'system',
+            author: { id: 'sys', username: 'mivo_bot', displayName: 'Mivo System' },
+            content: isDm
+              ? `This is the start of your direct conversation with ${title}. Send a message to say hello!`
+              : `Welcome to the beginning of #${title}. Send a message to start collaborating!`,
+            createdAt: new Date().toISOString(),
+          },
+        ];
+
+  const handleInputChange = (text: string) => {
+    setInputContent(text);
+    if (text.length > 0) {
+      if (!typingTimeoutRef.current) {
+        sendTyping(id, isDm);
+        typingTimeoutRef.current = setTimeout(() => {
+          typingTimeoutRef.current = null;
+        }, 3000);
+      }
+    }
+  };
 
   const handleSend = () => {
     if (!inputContent.trim()) return;
@@ -92,6 +130,7 @@ export default function ChatScreen() {
       {/* Top Navigation Bar */}
       <View style={styles.header}>
         <TouchableOpacity
+          testID="chat-back-btn"
           style={styles.backBtn}
           onPress={() => router.back()}
         >
@@ -109,6 +148,7 @@ export default function ChatScreen() {
 
         {/* Room Stage Trigger */}
         <TouchableOpacity
+          testID="chat-huddle-btn"
           style={styles.stageBtn}
           onPress={handleLaunchRoom}
           activeOpacity={0.8}
@@ -138,12 +178,21 @@ export default function ChatScreen() {
           )}
         />
 
+        {/* Typing indicator */}
+        {activeTyping.length > 0 && (
+          <View style={styles.typingContainer}>
+            <Text style={styles.typingText}>
+              {activeTyping.join(', ')} {activeTyping.length === 1 ? 'is' : 'are'} typing...
+            </Text>
+          </View>
+        )}
+
         {/* Reply Preview Bar */}
         {replyingTo && (
           <View style={styles.replyBar}>
             <View style={styles.replyContent}>
               <Text style={styles.replyingToText}>
-                Replying to {replyingTo.author.displayName}:
+                Replying to {replyingTo.author?.displayName || 'User'}:
               </Text>
               <Text style={styles.replySnippet} numberOfLines={1}>
                 {replyingTo.content}
@@ -162,15 +211,17 @@ export default function ChatScreen() {
           </TouchableOpacity>
 
           <TextInput
+            testID="chat-text-input"
             placeholder={`Message ${isDm ? title : `#${title}`}...`}
             placeholderTextColor={THEME.colors.textMuted}
             value={inputContent}
-            onChangeText={setInputContent}
+            onChangeText={handleInputChange}
             multiline
             style={styles.textInput}
           />
 
           <TouchableOpacity
+            testID="chat-send-btn"
             style={[
               styles.sendBtn,
               inputContent.trim().length > 0 && styles.sendBtnActive,
@@ -239,6 +290,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     flexGrow: 1,
     justifyContent: 'flex-end',
+  },
+  typingContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+  },
+  typingText: {
+    color: THEME.colors.accentGreen,
+    fontSize: 11,
+    fontStyle: 'italic',
   },
   replyBar: {
     flexDirection: 'row',

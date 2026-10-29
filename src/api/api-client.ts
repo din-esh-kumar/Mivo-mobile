@@ -6,9 +6,19 @@ export const STORAGE_KEYS = {
   USER: 'mivo_mobile_user_profile',
   API_URL: 'mivo_mobile_api_url',
   WS_URL: 'mivo_mobile_ws_url',
+  SOUND_ENABLED: 'mivo_mobile_sound_enabled',
+  HAPTICS_ENABLED: 'mivo_mobile_haptics_enabled',
 };
 
 const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+
+export const normalizeUrl = (url: string): string => {
+  let clean = url.trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(clean)) {
+    clean = `http://${clean}`;
+  }
+  return clean;
+};
 
 class MobileApiClient {
   private customBaseUrl: string | null = null;
@@ -21,7 +31,7 @@ class MobileApiClient {
         AsyncStorage.getItem(STORAGE_KEYS.API_URL),
       ]);
       if (token) this.accessToken = token;
-      if (savedUrl) this.customBaseUrl = savedUrl;
+      if (savedUrl) this.customBaseUrl = normalizeUrl(savedUrl);
     } catch {
       // ignore storage read failure on startup
     }
@@ -41,12 +51,12 @@ class MobileApiClient {
   }
 
   setBaseUrl(url: string) {
-    this.customBaseUrl = url.replace(/\/+$/, '');
+    this.customBaseUrl = normalizeUrl(url);
     AsyncStorage.setItem(STORAGE_KEYS.API_URL, this.customBaseUrl).catch(() => {});
   }
 
   getBaseUrl(): string {
-    return this.customBaseUrl || DEFAULT_API_URL;
+    return normalizeUrl(this.customBaseUrl || DEFAULT_API_URL);
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
@@ -64,31 +74,60 @@ class MobileApiClient {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
+    try {
       const response = await fetch(url, {
         ...options,
         headers,
         signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
-
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
+        let code = 'HTTP_ERROR';
+        let message = `Server returned status ${response.status}`;
+        let details: any = undefined;
+
+        if (data) {
+          if (typeof data.error === 'string') {
+            code = data.error;
+            message = Array.isArray(data.message)
+              ? data.message.join(', ')
+              : (data.message || data.error);
+          } else if (data.error && typeof data.error === 'object') {
+            code = data.error.code || 'HTTP_ERROR';
+            message = data.error.message || message;
+            details = data.error.details;
+          } else if (data.message) {
+            message = Array.isArray(data.message)
+              ? data.message.join(', ')
+              : data.message;
+          }
+        }
+
         return {
           success: false,
-          error: data?.error || {
-            code: 'HTTP_ERROR',
-            message: data?.message || `Server returned ${response.status}`,
+          error: {
+            code,
+            message,
+            details,
           },
         };
       }
 
-      return data as ApiResponse<T>;
+      // If server returned structured ApiResponse
+      if (data && typeof data === 'object' && 'success' in data) {
+        return data as ApiResponse<T>;
+      }
+
+      // If server returned raw data object/array directly on HTTP 200
+      return {
+        success: true,
+        data: data as T,
+      };
     } catch (err: any) {
       const isTimeout = err?.name === 'AbortError';
       return {
@@ -100,6 +139,8 @@ class MobileApiClient {
             : err?.message || 'Unable to reach Mivo server',
         },
       };
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

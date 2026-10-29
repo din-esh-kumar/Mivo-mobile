@@ -49,7 +49,11 @@ export default function ServerSettingsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity
+          testID="server-back-btn"
+          style={styles.backBtn}
+          onPress={() => router.back()}
+        >
           <ArrowLeft size={22} color={THEME.colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Server Endpoints</Text>
@@ -68,6 +72,7 @@ export default function ServerSettingsScreen() {
         <Text style={styles.sectionTitle}>QUICK PRESETS</Text>
         <View style={styles.presetsRow}>
           <TouchableOpacity
+            testID="preset-wifi-btn"
             style={styles.presetBtn}
             onPress={() => setPreset('192.168.1.10')}
           >
@@ -76,6 +81,7 @@ export default function ServerSettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            testID="preset-localhost-btn"
             style={styles.presetBtn}
             onPress={() => setPreset('localhost')}
           >
@@ -84,6 +90,7 @@ export default function ServerSettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            testID="preset-emulator-btn"
             style={styles.presetBtn}
             onPress={() => setPreset('10.0.2.2')}
           >
@@ -95,22 +102,25 @@ export default function ServerSettingsScreen() {
         {/* Form Inputs */}
         <Text style={styles.sectionTitle}>MANUAL CONFIGURATION</Text>
         <Input
+          testID="input-api-url"
           label="REST API URL"
-          placeholder="http://192.168.1.5:4000/api"
+          placeholder="http://192.168.1.10:4000/api/v1"
           value={inputApi}
           onChangeText={setInputApi}
           autoCapitalize="none"
         />
 
         <Input
+          testID="input-ws-url"
           label="WebSocket Gateway URL"
-          placeholder="http://192.168.1.5:4000"
+          placeholder="http://192.168.1.10:4000"
           value={inputWs}
           onChangeText={setInputWs}
           autoCapitalize="none"
         />
 
         <Button
+          testID="save-endpoints-btn"
           title="Save & Reconnect"
           onPress={handleSave}
           size="lg"
@@ -118,6 +128,7 @@ export default function ServerSettingsScreen() {
         />
 
         <Button
+          testID="reset-endpoints-btn"
           title="Reset to Defaults"
           onPress={handleReset}
           variant="ghost"

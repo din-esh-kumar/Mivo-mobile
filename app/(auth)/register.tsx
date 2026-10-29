@@ -41,7 +41,7 @@ export default function RegisterScreen() {
     const result = await register({
       displayName: displayName.trim(),
       username: username.trim().toLowerCase(),
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       password,
     });
 
@@ -64,6 +64,7 @@ export default function RegisterScreen() {
         >
           {/* Back Button */}
           <TouchableOpacity
+            testID="back-to-login-btn"
             style={styles.backBtn}
             onPress={() => router.back()}
           >
@@ -88,6 +89,7 @@ export default function RegisterScreen() {
             )}
 
             <Input
+              testID="register-name-input"
               label="Full / Display Name"
               placeholder="Alex Mercer"
               value={displayName}
@@ -96,6 +98,7 @@ export default function RegisterScreen() {
             />
 
             <Input
+              testID="register-username-input"
               label="Username"
               placeholder="alexmercer"
               autoCapitalize="none"
@@ -105,6 +108,7 @@ export default function RegisterScreen() {
             />
 
             <Input
+              testID="register-email-input"
               label="Email Address"
               placeholder="alex@mivo.local"
               keyboardType="email-address"
@@ -115,6 +119,7 @@ export default function RegisterScreen() {
             />
 
             <Input
+              testID="register-password-input"
               label="Password"
               placeholder="••••••••"
               isPassword
@@ -124,6 +129,7 @@ export default function RegisterScreen() {
             />
 
             <Button
+              testID="register-submit-btn"
               title="Create Account"
               onPress={handleRegister}
               isLoading={isLoading}
@@ -135,7 +141,10 @@ export default function RegisterScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already registered?</Text>
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity
+              testID="already-have-account-link"
+              onPress={() => router.back()}
+            >
               <Text style={styles.loginLink}> Sign In</Text>
             </TouchableOpacity>
           </View>

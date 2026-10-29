@@ -18,12 +18,14 @@ export const Avatar: React.FC<AvatarProps> = ({
   status,
   showStatus = false,
 }) => {
-  const initials = name
-    .split(' ')
+  const initials = (name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .map((n) => n[0])
     .slice(0, 2)
     .join('')
-    .toUpperCase();
+    .toUpperCase() || '?';
 
   const getStatusColor = () => {
     switch (status) {
@@ -46,7 +48,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         <Image source={{ uri: url }} style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]} />
       ) : (
         <View style={[styles.fallback, { width: size, height: size, borderRadius: size / 2 }]}>
-          <Text style={[styles.initials, { fontSize: size * 0.38 }]}>{initials || '?'}</Text>
+          <Text style={[styles.initials, { fontSize: size * 0.38 }]}>{initials}</Text>
         </View>
       )}
 
@@ -89,8 +91,8 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     position: 'absolute',
-    bottom: -1,
-    right: -1,
+    bottom: 0,
+    right: 0,
     borderWidth: 2,
     borderColor: THEME.colors.background,
   },

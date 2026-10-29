@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { THEME } from '../../src/constants/theme';
-import { Bell, Radio, MessageSquare, AtSign, Video, CheckCircle2 } from 'lucide-react-native';
+import { Bell, Radio, AtSign, Video, CheckCircle2 } from 'lucide-react-native';
 
 interface ActivityItem {
   id: string;
@@ -14,7 +15,9 @@ interface ActivityItem {
 }
 
 export default function ActivitiesScreen() {
-  const activities: ActivityItem[] = [
+  const router = useRouter();
+
+  const [activities, setActivities] = useState<ActivityItem[]>([
     {
       id: 'act-1',
       type: 'stage',
@@ -47,7 +50,41 @@ export default function ActivitiesScreen() {
       time: 'Yesterday',
       read: true,
     },
-  ];
+  ]);
+
+  const handlePressActivity = (item: ActivityItem) => {
+    // Mark as read
+    setActivities((prev) =>
+      prev.map((a) => (a.id === item.id ? { ...a, read: true } : a))
+    );
+
+    switch (item.type) {
+      case 'stage':
+        router.push({
+          pathname: '/room/[id]',
+          params: { id: 'chan-stage-1', name: 'All-Hands Townhall', mode: 'STREAM' },
+        });
+        break;
+      case 'mention':
+        router.push({
+          pathname: '/chat/[id]',
+          params: { id: 'chan-gen', name: 'general', type: 'channel' },
+        });
+        break;
+      case 'call':
+        router.push({
+          pathname: '/room/[id]',
+          params: { id: 'call-sarah', name: 'Audio Call with Sarah', mode: 'VOICE' },
+        });
+        break;
+      case 'recording':
+        Alert.alert(
+          'Minutes of Meeting Summary',
+          'Key Takeaways:\n• Unified Stage architecture finalized for Expo SDK 58.\n• Zero-drop morphing between Audio, Video, and Stream modes.\n• Next milestone: autonomous mesh connections.'
+        );
+        break;
+    }
+  };
 
   const getIcon = (type: ActivityItem['type']) => {
     switch (type) {
@@ -79,6 +116,7 @@ export default function ActivitiesScreen() {
           <TouchableOpacity
             style={[styles.itemCard, !item.read && styles.itemCardUnread]}
             activeOpacity={0.7}
+            onPress={() => handlePressActivity(item)}
           >
             <View style={styles.iconCircle}>{getIcon(item.type)}</View>
 

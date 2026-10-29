@@ -47,6 +47,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
         return (
           <TouchableOpacity
             key={item.mode}
+            testID={`mode-pill-${item.mode}`}
             activeOpacity={0.8}
             onPress={() => onSelectMode(item.mode)}
             style={[styles.pill, isActive && styles.activePill]}

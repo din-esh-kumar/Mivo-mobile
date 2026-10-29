@@ -19,6 +19,7 @@ interface ButtonProps {
   icon?: React.ReactNode;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  testID?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -31,6 +32,7 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   style,
   textStyle,
+  testID,
 }) => {
   const getContainerStyle = () => {
     switch (variant) {
@@ -74,6 +76,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
+      testID={testID}
       activeOpacity={0.8}
       onPress={onPress}
       disabled={disabled || isLoading}

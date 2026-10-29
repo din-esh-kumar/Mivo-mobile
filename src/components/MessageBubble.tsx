@@ -15,10 +15,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isCurrentUser,
   onReply,
 }) => {
-  const formattedTime = new Date(message.createdAt).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formatTime = (iso?: string) => {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      const h = d.getHours().toString().padStart(2, '0');
+      const m = d.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    } catch {
+      return '';
+    }
+  };
+
+  const formattedTime = formatTime(message.createdAt);
+  const authorName = message.author?.displayName || 'User';
+  const avatarUrl = message.author?.avatarUrl;
 
   return (
     <View
@@ -29,8 +41,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     >
       {!isCurrentUser && (
         <Avatar
-          url={message.author.avatarUrl}
-          name={message.author.displayName}
+          url={avatarUrl}
+          name={authorName}
           size={32}
         />
       )}
@@ -38,8 +50,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <View style={[styles.bubbleContainer, isCurrentUser && styles.alignRight]}>
         {!isCurrentUser && (
           <View style={styles.authorRow}>
-            <Text style={styles.authorName}>{message.author.displayName}</Text>
-            <Text style={styles.timeText}>{formattedTime}</Text>
+            <Text style={styles.authorName}>{authorName}</Text>
+            {formattedTime ? <Text style={styles.timeText}>{formattedTime}</Text> : null}
           </View>
         )}
 
@@ -47,7 +59,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {message.replyTo && (
           <View style={styles.replyQuote}>
             <Text style={styles.replyAuthor}>
-              Replying to {message.replyTo.author?.displayName}:
+              Replying to {message.replyTo.author?.displayName || 'User'}:
             </Text>
             <Text style={styles.replyContent} numberOfLines={1}>
               {message.replyTo.content}
@@ -73,9 +85,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             {message.content}
           </Text>
 
-          {isCurrentUser && (
+          {isCurrentUser && formattedTime ? (
             <Text style={styles.timeMeText}>{formattedTime}</Text>
-          )}
+          ) : null}
         </TouchableOpacity>
 
         {/* Reactions */}

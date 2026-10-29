@@ -1,0 +1,44 @@
+appId: com.wysbryx.mivo
+---
+# ==========================================
+# Maestro Flow 01: Authentication & Server Config
+# ==========================================
+
+- launchApp:
+    clearState: true
+
+# 1. Assert Brand Gateway Screen
+- assertVisible: "Welcome to Mivo"
+- assertVisible: "Log in to join your unified rooms, channels, and team conversations."
+- assertVisible: "Explore as Demo User"
+
+# 2. Test Server Endpoint Configuration Screen
+- tapOn:
+    id: "server-endpoint-btn"
+- assertVisible: "Server Endpoints"
+- assertVisible: "QUICK PRESETS"
+- assertVisible: "Localhost"
+- tapOn:
+    id: "preset-wifi-btn"
+- tapOn:
+    id: "preset-localhost-btn"
+- tapOn:
+    id: "save-endpoints-btn"
+- tapOn: "OK"
+
+# 3. Test Register / Account Creation Flow
+- tapOn:
+    id: "create-account-link"
+- assertVisible: "Create Account"
+- assertVisible: "Full / Display Name"
+- tapOn:
+    id: "back-to-login-btn"
+- assertVisible: "Welcome to Mivo"
+
+# 4. Sign in as Demo User
+- tapOn:
+    id: "demo-user-btn"
+
+# 5. Verify Successful Entrance to Channels Screen
+- assertVisible: "Mivo Communities"
+

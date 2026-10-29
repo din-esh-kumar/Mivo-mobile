@@ -63,6 +63,7 @@ export default function RoomStageScreen() {
 
     return () => {
       clearInterval(interval);
+      leaveRoom();
     };
   }, [roomId]);
 
@@ -79,20 +80,23 @@ export default function RoomStageScreen() {
     return `${mins}:${secs}`;
   };
 
-  // Ensure current user is in participants list for presentation
+  const myId = currentUser?.id || 'me';
   const allParticipants = [
     {
-      userId: currentUser?.id || 'me',
+      userId: myId,
       displayName: currentUser?.displayName || 'You',
       username: currentUser?.username || 'you',
       avatarUrl: currentUser?.avatarUrl,
       isMuted,
       isVideoEnabled,
       isSpeaking: false,
-      isHost: true,
+      isHost:
+        currentRoom?.hostId === myId ||
+        !currentRoom?.hostId ||
+        currentRoom?.hostId === 'current-user',
       joinedAt: '',
     },
-    ...participants.filter((p) => p.userId !== currentUser?.id),
+    ...participants.filter((p) => p.userId !== myId && p.userId !== currentUser?.id),
   ];
 
   return (
@@ -147,6 +151,7 @@ export default function RoomStageScreen() {
       <View style={styles.controlsDock}>
         {/* Mic Toggle */}
         <TouchableOpacity
+          testID="toggle-mic-btn"
           style={[styles.controlBtn, isMuted ? styles.controlBtnMuted : styles.controlBtnActive]}
           onPress={toggleMute}
           activeOpacity={0.8}
@@ -160,6 +165,7 @@ export default function RoomStageScreen() {
 
         {/* Video Toggle */}
         <TouchableOpacity
+          testID="toggle-video-btn"
           style={[
             styles.controlBtn,
             isVideoEnabled ? styles.controlBtnActive : styles.controlBtnMuted,
@@ -176,6 +182,7 @@ export default function RoomStageScreen() {
 
         {/* In-Call Chat Overlay Button */}
         <TouchableOpacity
+          testID="in-call-chat-btn"
           style={styles.controlBtnSecondary}
           onPress={() => {
             router.push({
@@ -190,6 +197,7 @@ export default function RoomStageScreen() {
 
         {/* Leave Room Button */}
         <TouchableOpacity
+          testID="leave-room-btn"
           style={styles.leaveBtn}
           onPress={handleLeave}
           activeOpacity={0.8}

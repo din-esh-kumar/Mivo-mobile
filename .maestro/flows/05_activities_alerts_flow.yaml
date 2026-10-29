@@ -1,0 +1,35 @@
+appId: com.wysbryx.mivo
+---
+# ==========================================
+# Maestro Flow 05: Activity Feed & Alerts Navigation
+# ==========================================
+
+- launchApp:
+    clearState: false
+
+# 1. Switch to Activity Tab
+- tapOn: "Activity"
+- assertVisible: "Activity & Alerts"
+- assertVisible: "Live Stage Started"
+- assertVisible: "Mentioned in #general"
+- assertVisible: "MOM Meeting Summary Ready"
+- assertVisible: "Missed Audio Call"
+
+# 2. Tap MOM AI Summary
+- tapOn: "MOM Meeting Summary Ready"
+- assertVisible: "Minutes of Meeting Summary"
+- tapOn: "OK"
+
+# 3. Tap Mentioned in #general Alert -> Navigates to channel chat
+- tapOn: "Mentioned in #general"
+- assertVisible: "#general"
+- tapOn:
+    id: "chat-back-btn"
+
+# 4. Tap Live Stage Started Alert -> Navigates to Stage room
+- tapOn: "Live Stage Started"
+- assertVisible: "LIVE"
+- tapOn:
+    id: "leave-room-btn"
+- assertVisible: "Activity & Alerts"
+

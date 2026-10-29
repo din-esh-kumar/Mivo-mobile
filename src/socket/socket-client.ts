@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../api/api-client';
+import { STORAGE_KEYS, normalizeUrl } from '../api/api-client';
 import { REALTIME_EVENTS } from '../constants/events';
 import { RoomCommunicationMode } from '../types';
 
@@ -16,33 +16,56 @@ class MobileSocketClient {
   private listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
 
   async setWsUrl(url: string) {
-    this.customWsUrl = url.replace(/\/+$/, '');
-    await AsyncStorage.setItem(STORAGE_KEYS.WS_URL, this.customWsUrl);
+    const cleanUrl = normalizeUrl(url);
+    this.customWsUrl = cleanUrl;
+    await AsyncStorage.setItem(STORAGE_KEYS.WS_URL, cleanUrl);
+
     if (this.socket) {
+      const savedToken = this.currentToken;
       this.disconnect();
-      this.connect();
+      if (savedToken) {
+        this.connect(savedToken);
+      }
     }
   }
 
   async getWsUrl(): Promise<string> {
     if (!this.customWsUrl) {
       const saved = await AsyncStorage.getItem(STORAGE_KEYS.WS_URL);
-      if (saved) this.customWsUrl = saved;
+      if (saved) this.customWsUrl = normalizeUrl(saved);
     }
-    return this.customWsUrl || DEFAULT_WS_URL;
+    return normalizeUrl(this.customWsUrl || DEFAULT_WS_URL);
   }
 
   async connect(token?: string): Promise<Socket> {
-    if (token) this.currentToken = token;
-    else if (!this.currentToken) {
+    if (token) {
+      if (this.socket && this.currentToken && this.currentToken !== token) {
+        this.socket.disconnect();
+        this.socket = null;
+      }
+      this.currentToken = token;
+    } else if (!this.currentToken) {
       this.currentToken = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
     }
 
-    if (this.socket?.connected) return this.socket;
+    if (this.socket?.connected) {
+      return this.socket;
+    }
 
+    if (this.isConnecting && this.socket) {
+      return this.socket;
+    }
+
+    this.isConnecting = true;
     const wsUrl = await this.getWsUrl();
 
-    this.socket = io(wsUrl, {
+    if (this.socket) {
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
+    }
+
+    const socketInstance = io(wsUrl, {
       auth: (cb) => {
         cb({ token: this.currentToken ? `Bearer ${this.currentToken}` : '' });
       },
@@ -55,38 +78,45 @@ class MobileSocketClient {
       timeout: 10000,
     });
 
-    // Rebind any existing event listeners
+    this.socket = socketInstance;
+
+    // Rebind all registered event listeners
     this.listeners.forEach((cbs, event) => {
-      cbs.forEach((cb) => this.socket?.on(event, cb));
+      cbs.forEach((cb) => socketInstance.on(event, cb));
     });
 
-    this.socket.on('connect', () => {
+    socketInstance.on('connect', () => {
       this.isConnecting = false;
-      console.log('[Mobile Socket] Connected to Mivo Gateway ID:', this.socket?.id);
+      console.log('[Mobile Socket] Connected to Gateway ID:', socketInstance.id);
 
       // Re-join active channels/rooms upon reconnect
       this.joinedRooms.forEach((roomId) => {
-        this.socket?.emit(REALTIME_EVENTS.ROOM_JOIN, { roomId });
+        socketInstance.emit(REALTIME_EVENTS.ROOM_JOIN, { roomId });
       });
 
       this.joinedDms.forEach((conversationId) => {
-        this.socket?.emit(REALTIME_EVENTS.DM_JOIN, { conversationId });
+        socketInstance.emit(REALTIME_EVENTS.DM_JOIN, { conversationId });
       });
     });
 
-    this.socket.on('disconnect', (reason) => {
+    socketInstance.on('disconnect', (reason) => {
+      this.isConnecting = false;
       console.log('[Mobile Socket] Disconnected:', reason);
     });
 
-    this.socket.on('connect_error', (err) => {
+    socketInstance.on('connect_error', (err) => {
+      this.isConnecting = false;
       console.warn('[Mobile Socket] Connection Error:', err.message);
     });
 
-    return this.socket;
+    return socketInstance;
   }
 
   disconnect() {
+    this.currentToken = null;
+    this.isConnecting = false;
     if (this.socket) {
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
     }
@@ -172,6 +202,14 @@ class MobileSocketClient {
       this.socket?.emit(REALTIME_EVENTS.CHAT_TYPING, { channelId });
     } else if (conversationId) {
       this.socket?.emit(REALTIME_EVENTS.DM_TYPING, { conversationId });
+    }
+  }
+
+  sendStopTyping(channelId?: string, conversationId?: string) {
+    if (channelId) {
+      this.socket?.emit(REALTIME_EVENTS.CHAT_STOP_TYPING, { channelId });
+    } else if (conversationId) {
+      this.socket?.emit(REALTIME_EVENTS.DM_STOP_TYPING, { conversationId });
     }
   }
 }

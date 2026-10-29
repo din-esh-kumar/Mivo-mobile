@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +21,7 @@ import { Search, Plus, MessageSquare } from 'lucide-react-native';
 export default function ConversationsScreen() {
   const router = useRouter();
   const currentUser = useAuthStore((s) => s.user);
-  const { conversations, loadConversations, selectConversation } =
+  const { conversations, loadConversations, selectConversation, createDirectConversation } =
     useConversationStore();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -36,81 +37,91 @@ export default function ConversationsScreen() {
     setRefreshing(false);
   };
 
+  const formatMessageTime = (iso?: string | null) => {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      const h = d.getHours().toString().padStart(2, '0');
+      const m = d.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    } catch {
+      return '';
+    }
+  };
+
   const getRecipient = (conv: ConversationDTO): UserSummaryDTO => {
     const other = conv.participants?.find((p) => p.userId !== currentUser?.id);
     return (
       other?.user || {
         id: conv.id,
         username: conv.name || 'chat',
-        displayName: conv.name || 'Chat',
+        displayName: conv.name || 'Team Chat',
         avatarUrl: conv.avatarUrl || null,
         status: 'OFFLINE',
       }
     );
   };
 
-  // Sample conversations if empty
-  const displayConversations =
-    conversations.length > 0
-      ? conversations
-      : [
-          {
-            id: 'dm-1',
-            type: 'DIRECT' as const,
-            participants: [
-              {
-                id: 'p1',
-                userId: 'user-2',
-                user: {
-                  id: 'user-2',
-                  username: 'sarah_pm',
-                  displayName: 'Sarah Jenkins',
-                  status: 'ONLINE' as const,
-                },
-                joinedAt: '',
+  const handleNewChat = () => {
+    Alert.prompt
+      ? Alert.prompt(
+          'Start Direct Message',
+          'Enter username or user ID to chat with:',
+          async (text) => {
+            if (!text?.trim()) return;
+            const res = await createDirectConversation(text.trim());
+            if (res.success && res.data) {
+              handleOpenConversation(res.data);
+            } else {
+              Alert.alert('Notice', res.error || 'Starting local chat room');
+            }
+          }
+        )
+      : Alert.alert(
+          'Start Direct Message',
+          'Choose a contact to begin a conversation:',
+          [
+            {
+              text: 'Elena Rostova (Lead AI)',
+              onPress: async () => {
+                const sampleDm: ConversationDTO = {
+                  id: 'dm-elena-' + Date.now().toString(36),
+                  type: 'DIRECT',
+                  participants: [
+                    {
+                      id: 'p-elena',
+                      userId: 'user-elena',
+                      user: {
+                        id: 'user-elena',
+                        username: 'elena_ai',
+                        displayName: 'Elena Rostova',
+                        status: 'ONLINE',
+                      },
+                      joinedAt: new Date().toISOString(),
+                    },
+                  ],
+                  lastMessage: {
+                    id: 'm-elena-1',
+                    authorId: 'user-elena',
+                    author: { id: 'user-elena', username: 'elena_ai', displayName: 'Elena Rostova' },
+                    content: 'Hi! Let me know if you need to test the real-time audio stage.',
+                    createdAt: new Date().toISOString(),
+                  },
+                  unreadCount: 1,
+                  createdAt: new Date().toISOString(),
+                };
+                handleOpenConversation(sampleDm);
               },
-            ],
-            lastMessage: {
-              id: 'm1',
-              authorId: 'user-2',
-              author: { id: 'user-2', username: 'sarah_pm', displayName: 'Sarah' },
-              content: 'Hey, did you review the latest WebRTC mesh latency graphs?',
-              createdAt: new Date().toISOString(),
             },
-            unreadCount: 2,
-            createdAt: '',
-          },
-          {
-            id: 'dm-2',
-            type: 'DIRECT' as const,
-            participants: [
-              {
-                id: 'p2',
-                userId: 'user-3',
-                user: {
-                  id: 'user-3',
-                  username: 'marcus_eng',
-                  displayName: 'Marcus Vance',
-                  status: 'IDLE' as const,
-                },
-                joinedAt: '',
-              },
-            ],
-            lastMessage: {
-              id: 'm2',
-              authorId: 'user-3',
-              author: { id: 'user-3', username: 'marcus_eng', displayName: 'Marcus' },
-              content: 'I merged the PR for the NestJS 11 Gateway.',
-              createdAt: new Date(Date.now() - 3600000).toISOString(),
-            },
-            unreadCount: 0,
-            createdAt: '',
-          },
-        ];
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+  };
 
-  const filteredConversations = displayConversations.filter((c) => {
-    const recipient = getRecipient(c as ConversationDTO);
-    return recipient.displayName
+  const filteredConversations = conversations.filter((c) => {
+    const recipient = getRecipient(c);
+    return (recipient.displayName || '')
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
   });
@@ -137,7 +148,12 @@ export default function ConversationsScreen() {
           <Text style={styles.headerTitle}>Direct Messages</Text>
         </View>
 
-        <TouchableOpacity style={styles.newChatBtn}>
+        <TouchableOpacity
+          testID="new-chat-btn"
+          style={styles.newChatBtn}
+          onPress={handleNewChat}
+          activeOpacity={0.8}
+        >
           <Plus size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -146,6 +162,7 @@ export default function ConversationsScreen() {
       <View style={styles.searchContainer}>
         <Search size={18} color={THEME.colors.textMuted} />
         <TextInput
+          testID="search-conversations-input"
           placeholder="Search direct messages..."
           placeholderTextColor={THEME.colors.textMuted}
           value={searchQuery}
@@ -156,7 +173,7 @@ export default function ConversationsScreen() {
 
       {/* Conversations List */}
       <FlatList
-        data={filteredConversations as ConversationDTO[]}
+        data={filteredConversations}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl
@@ -169,6 +186,7 @@ export default function ConversationsScreen() {
         renderItem={({ item }) => {
           const recipient = getRecipient(item);
           const hasUnread = Boolean(item.unreadCount && item.unreadCount > 0);
+          const formattedTime = formatMessageTime(item.lastMessage?.createdAt);
 
           return (
             <TouchableOpacity
@@ -189,14 +207,9 @@ export default function ConversationsScreen() {
                   <Text style={styles.recipientName} numberOfLines={1}>
                     {recipient.displayName}
                   </Text>
-                  {item.lastMessage && (
-                    <Text style={styles.timeText}>
-                      {new Date(item.lastMessage.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Text>
-                  )}
+                  {formattedTime ? (
+                    <Text style={styles.timeText}>{formattedTime}</Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.convBottomRow}>

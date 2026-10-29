@@ -15,8 +15,11 @@ export default function RootLayout() {
   const setupRoomSockets = useRoomStore((s) => s.setupSocketListeners);
 
   useEffect(() => {
-    loadConfig();
-    initializeAuth();
+    const initApp = async () => {
+      await loadConfig();
+      await initializeAuth();
+    };
+    initApp();
   }, []);
 
   useEffect(() => {

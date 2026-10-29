@@ -30,7 +30,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" backgroundColor={THEME.colors.background} />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerShown: false,

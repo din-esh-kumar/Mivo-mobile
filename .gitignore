@@ -20,8 +20,11 @@ ios/
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+pnpm-debug.log*
+
+# Lockfiles (pnpm is the source of truth)
+package-lock.json
 
 # OS
 .DS_Store
 Thumbs.db
-

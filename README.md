@@ -107,7 +107,7 @@ Mivo-mobile/
 ### Prerequisites
 
 * **Node.js**: v18.0.0 or later (v20+ recommended)
-* **pnpm** or **npm**
+* **pnpm**: v9.0.0 or later (v10+ recommended)
 * **Expo Go** app on your iOS or Android phone (available in App Store / Google Play)
 
 ### 1. Installation
@@ -119,8 +119,6 @@ cd Mivo-mobile
 
 # Install dependencies
 pnpm install
-# or
-npm install
 ```
 
 ### 2. Configure Backend Endpoints
@@ -141,7 +139,9 @@ Set the API & Socket.io server endpoints:
 ### 3. Start Development Server
 
 ```bash
-npx expo start
+pnpm start
+# or
+pnpm dev
 ```
 
 * Press `a` to run on an attached **Android device / emulator**.
@@ -156,20 +156,17 @@ npx expo start
 To build standalone APKs or iOS bundles using Expo Application Services (EAS):
 
 ```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
+# EAS CLI via pnpm dlx or global install
+pnpm dlx eas-cli login
 
 # Configure EAS Build
-eas build:configure
+pnpm dlx eas-cli build:configure
 
 # Build Android APK
-eas build -p android --profile preview
+pnpm dlx eas-cli build -p android --profile preview
 
 # Build iOS App
-eas build -p ios --profile preview
+pnpm dlx eas-cli build -p ios --profile preview
 ```
 
 ---

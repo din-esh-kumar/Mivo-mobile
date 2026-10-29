@@ -69,6 +69,14 @@ export default function ServerSettingsScreen() {
         <View style={styles.presetsRow}>
           <TouchableOpacity
             style={styles.presetBtn}
+            onPress={() => setPreset('192.168.1.10')}
+          >
+            <Smartphone size={16} color={THEME.colors.accentGreen} />
+            <Text style={styles.presetText}>Wi-Fi (192.168.1.10)</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.presetBtn}
             onPress={() => setPreset('localhost')}
           >
             <Laptop size={16} color={THEME.colors.textSecondary} />

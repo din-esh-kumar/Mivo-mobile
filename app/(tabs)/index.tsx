@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,9 +20,12 @@ import {
   Video,
   Radio,
   ChevronRight,
-  Users,
   Compass,
+  Users,
+  Sparkles,
+  Zap,
 } from 'lucide-react-native';
+import { triggerHaptic } from '../../src/utils/haptics';
 
 export default function ChannelsScreen() {
   const router = useRouter();
@@ -49,6 +53,7 @@ export default function ChannelsScreen() {
   };
 
   const handleOpenChannel = (channel: ChannelDTO) => {
+    triggerHaptic();
     selectChannel(channel);
     router.push({
       pathname: '/chat/[id]',
@@ -57,6 +62,7 @@ export default function ChannelsScreen() {
   };
 
   const handleJoinVoiceOrStage = (channel: ChannelDTO) => {
+    triggerHaptic();
     selectChannel(channel);
     const roomId = channel.activeRoomId || channel.id;
     const mode = channel.type === 'STAGE' ? 'STREAM' : 'VOICE';
@@ -76,10 +82,14 @@ export default function ChannelsScreen() {
   const hasLoadedChannels = channels.length > 0;
 
   // Fallback demo data if backend hasn't populated yet
-  const displayCommunities = communities.length > 0 ? communities : [
-    { id: 'comm-1', name: 'Engineering Core', slug: 'eng-core', ownerId: '1', createdAt: '' },
-    { id: 'comm-2', name: 'Product & Design', slug: 'product', ownerId: '1', createdAt: '' },
-  ];
+  const displayCommunities =
+    communities.length > 0
+      ? communities
+      : [
+          { id: 'comm-1', name: 'Engineering Core', slug: 'eng-core', ownerId: '1', createdAt: '' },
+          { id: 'comm-2', name: 'Product & Design', slug: 'product', ownerId: '1', createdAt: '' },
+          { id: 'comm-3', name: 'Growth & Ops', slug: 'growth', ownerId: '1', createdAt: '' },
+        ];
 
   const displayTextChannels = hasLoadedChannels
     ? textChannels
@@ -107,10 +117,20 @@ export default function ChannelsScreen() {
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleRow}>
-          <Compass size={24} color={THEME.colors.primary} />
-          <Text style={styles.headerTitle}>
-            {activeCommunity?.name || 'Mivo Communities'}
-          </Text>
+          <View style={styles.headerIconBubble}>
+            <Compass size={20} color={THEME.colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>
+              {activeCommunity?.name || 'Mivo Communities'}
+            </Text>
+            <Text style={styles.headerSubtitle}>Real-time channels & audio stages</Text>
+          </View>
+        </View>
+
+        <View style={styles.headerRightBadge}>
+          <View style={styles.livePulseDot} />
+          <Text style={styles.livePulseText}>Mesh Ready</Text>
         </View>
       </View>
 
@@ -129,7 +149,11 @@ export default function ChannelsScreen() {
               <TouchableOpacity
                 key={c.id}
                 testID={`community-pill-${c.id}`}
-                onPress={() => selectCommunity(c as any)}
+                activeOpacity={0.8}
+                onPress={() => {
+                  triggerHaptic();
+                  selectCommunity(c as any);
+                }}
                 style={[
                   styles.communityPill,
                   isSelected && styles.communityPillActive,
@@ -159,23 +183,35 @@ export default function ChannelsScreen() {
             tintColor={THEME.colors.primary}
           />
         }
+        showsVerticalScrollIndicator={false}
       >
         {/* TEXT CHANNELS SECTION */}
         {displayTextChannels.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>TEXT CHANNELS</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeader}>TEXT CHANNELS</Text>
+              <Text style={styles.sectionCount}>{displayTextChannels.length}</Text>
+            </View>
             {displayTextChannels.map((c) => (
               <TouchableOpacity
                 key={c.id}
                 testID={`channel-row-${c.id}`}
                 style={styles.channelRow}
+                activeOpacity={0.75}
                 onPress={() => handleOpenChannel(c as ChannelDTO)}
               >
                 <View style={styles.channelLeft}>
-                  <Hash size={18} color={THEME.colors.textMuted} />
-                  <Text style={styles.channelName}>{c.name}</Text>
+                  <View style={styles.hashIconBg}>
+                    <Hash size={16} color={THEME.colors.primaryLight} />
+                  </View>
+                  <View style={styles.channelTitleWrapper}>
+                    <Text style={styles.channelName}>{c.name}</Text>
+                    {c.type === 'ANNOUNCEMENT' ? (
+                      <Text style={styles.channelSub}>Broadcast only</Text>
+                    ) : null}
+                  </View>
                 </View>
-                <ChevronRight size={18} color={THEME.colors.borderLight} />
+                <ChevronRight size={18} color="#475569" />
               </TouchableOpacity>
             ))}
           </View>
@@ -184,19 +220,23 @@ export default function ChannelsScreen() {
         {/* VOICE HUDDLES SECTION */}
         {displayVoiceChannels.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>VOICE HUDDLES & STAGES</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeader}>VOICE HUDDLES & STAGES</Text>
+              <View style={styles.sectionPulseDot} />
+            </View>
             {displayVoiceChannels.map((c) => (
               <TouchableOpacity
                 key={c.id}
                 testID={`channel-row-${c.id}`}
                 style={[styles.channelRow, styles.voiceRow]}
+                activeOpacity={0.8}
                 onPress={() => handleJoinVoiceOrStage(c as ChannelDTO)}
               >
                 <View style={styles.channelLeft}>
                   <View style={styles.voiceIconBg}>
                     <Volume2 size={16} color={THEME.colors.accentGreen} />
                   </View>
-                  <View>
+                  <View style={styles.channelTitleWrapper}>
                     <Text style={styles.channelName}>{c.name}</Text>
                     <Text style={styles.voiceSub}>Tap to jump in voice room</Text>
                   </View>
@@ -212,19 +252,25 @@ export default function ChannelsScreen() {
         {/* LIVE BROADCAST / STAGE SECTION */}
         {displayStageChannels.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>INTERACTIVE LIVE STAGES</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeader}>INTERACTIVE LIVE STAGES</Text>
+              <View style={styles.stageLiveBeacon}>
+                <Text style={styles.stageLiveBeaconText}>ON AIR</Text>
+              </View>
+            </View>
             {displayStageChannels.map((c) => (
               <TouchableOpacity
                 key={c.id}
                 testID={`channel-row-${c.id}`}
                 style={[styles.channelRow, styles.stageRow]}
+                activeOpacity={0.8}
                 onPress={() => handleJoinVoiceOrStage(c as ChannelDTO)}
               >
                 <View style={styles.channelLeft}>
                   <View style={styles.stageIconBg}>
                     <Radio size={16} color={THEME.colors.accentCyan} />
                   </View>
-                  <View>
+                  <View style={styles.channelTitleWrapper}>
                     <Text style={styles.channelName}>{c.name}</Text>
                     <Text style={styles.stageSub}>Multi-participant video stage</Text>
                   </View>
@@ -244,53 +290,102 @@ export default function ChannelsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    backgroundColor: '#080B11',
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: 10,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    borderBottomColor: '#172033',
   },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+  },
+  headerIconBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    color: '#F8FAFC',
+    letterSpacing: -0.3,
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  headerRightBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  livePulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: THEME.colors.accentGreen,
+  },
+  livePulseText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: THEME.colors.accentGreen,
+    letterSpacing: 0.2,
   },
   communityCarousel: {
     paddingVertical: 10,
+    backgroundColor: '#0B0F1A',
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    borderBottomColor: '#172033',
   },
   communityScrollContent: {
     paddingHorizontal: 16,
     gap: 8,
   },
   communityPill: {
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: '#111726',
     paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: THEME.borderRadius.full,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: '#202B3F',
   },
   communityPillActive: {
     backgroundColor: THEME.colors.primary,
-    borderColor: THEME.colors.primary,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: THEME.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 5,
+    elevation: 3,
   },
   communityPillText: {
-    color: THEME.colors.textSecondary,
+    color: '#94A3B8',
     fontSize: 13,
     fontWeight: '600',
   },
   communityPillTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
   scrollList: {
     padding: 16,
@@ -299,31 +394,67 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
-  sectionHeader: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: THEME.colors.textMuted,
-    letterSpacing: 0.8,
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 10,
-    marginLeft: 4,
+    paddingHorizontal: 4,
+  },
+  sectionHeader: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.8,
+  },
+  sectionCount: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  sectionPulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: THEME.colors.accentGreen,
+  },
+  stageLiveBeacon: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+  },
+  stageLiveBeaconText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#22D3EE',
   },
   channelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: '#101625',
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: THEME.borderRadius.md,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: '#1D273B',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   voiceRow: {
-    borderColor: 'rgba(16, 185, 129, 0.25)',
+    borderColor: 'rgba(16, 185, 129, 0.28)',
+    backgroundColor: '#0F1A24',
   },
   stageRow: {
-    borderColor: 'rgba(6, 182, 212, 0.25)',
+    borderColor: 'rgba(6, 182, 212, 0.28)',
+    backgroundColor: '#0D1A26',
   },
   channelLeft: {
     flexDirection: 'row',
@@ -331,62 +462,80 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  channelName: {
-    color: THEME.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  voiceSub: {
-    color: THEME.colors.textMuted,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  stageSub: {
-    color: THEME.colors.textMuted,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  voiceIconBg: {
+  hashIconBg: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  channelTitleWrapper: {
+    flex: 1,
+  },
+  channelName: {
+    color: '#F8FAFC',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  channelSub: {
+    color: '#64748B',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  voiceSub: {
+    color: '#94A3B8',
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  stageSub: {
+    color: '#94A3B8',
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  voiceIconBg: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: 'rgba(16, 185, 129, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stageIconBg: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: 'rgba(6, 182, 212, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   joinTag: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    backgroundColor: 'rgba(16, 185, 129, 0.16)',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: THEME.borderRadius.sm,
     borderWidth: 1,
-    borderColor: THEME.colors.accentGreen,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
   },
   joinTagText: {
-    color: THEME.colors.accentGreen,
+    color: '#10B981',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   liveBadge: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    backgroundColor: 'rgba(6, 182, 212, 0.16)',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: THEME.borderRadius.sm,
     borderWidth: 1,
-    borderColor: THEME.colors.accentCyan,
+    borderColor: 'rgba(6, 182, 212, 0.4)',
   },
   liveBadgeText: {
-    color: THEME.colors.accentCyan,
+    color: '#06B6D4',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });
-

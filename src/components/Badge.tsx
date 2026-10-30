@@ -18,17 +18,17 @@ export const Badge: React.FC<BadgeProps> = ({
   const getBadgeColors = () => {
     switch (variant) {
       case 'success':
-        return { bg: '#064E3B', text: '#34D399', border: '#059669' };
+        return { bg: 'rgba(16, 185, 129, 0.16)', text: '#34D399', border: 'rgba(16, 185, 129, 0.35)' };
       case 'danger':
-        return { bg: '#7F1D1D', text: '#F87171', border: '#DC2626' };
+        return { bg: 'rgba(239, 68, 68, 0.16)', text: '#F87171', border: 'rgba(239, 68, 68, 0.35)' };
       case 'warning':
-        return { bg: '#78350F', text: '#FBBF24', border: '#D97706' };
+        return { bg: 'rgba(245, 158, 11, 0.16)', text: '#FBBF24', border: 'rgba(245, 158, 11, 0.35)' };
       case 'cyan':
-        return { bg: '#164E63', text: '#22D3EE', border: '#0891B2' };
+        return { bg: 'rgba(6, 182, 212, 0.16)', text: '#22D3EE', border: 'rgba(6, 182, 212, 0.35)' };
       case 'neutral':
-        return { bg: '#1E293B', text: '#94A3B8', border: '#334155' };
+        return { bg: 'rgba(148, 163, 184, 0.12)', text: '#CBD5E1', border: 'rgba(148, 163, 184, 0.25)' };
       default:
-        return { bg: '#312E81', text: '#818CF8', border: '#4F46E5' };
+        return { bg: 'rgba(99, 102, 241, 0.16)', text: '#A5B4FC', border: 'rgba(99, 102, 241, 0.35)' };
     }
   };
 
@@ -42,7 +42,7 @@ export const Badge: React.FC<BadgeProps> = ({
           backgroundColor: colors.bg,
           borderColor: colors.border,
           paddingVertical: size === 'sm' ? 2 : 4,
-          paddingHorizontal: size === 'sm' ? 6 : 10,
+          paddingHorizontal: size === 'sm' ? 7 : 10,
         },
         style,
       ]}
@@ -71,8 +71,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: {
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
 });
-

@@ -18,15 +18,17 @@ import { useRoomStore } from '../../src/stores/useRoomStore';
 import { socketClient } from '../../src/socket/socket-client';
 import { ChatMessageDTO } from '../../src/types';
 import { MessageBubble } from '../../src/components/MessageBubble';
+import { Avatar } from '../../src/components/Avatar';
 import {
   ArrowLeft,
   Send,
   Paperclip,
-  Volume2,
   Radio,
   X,
   Smile,
+  Sparkles,
 } from 'lucide-react-native';
+import { triggerHaptic, triggerSelectionHaptic } from '../../src/utils/haptics';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -84,7 +86,7 @@ export default function ChatScreen() {
           {
             id: 'welcome-msg',
             authorId: 'system',
-            author: { id: 'sys', username: 'mivo_bot', displayName: 'Mivo System' },
+            author: { id: 'sys', username: 'mivo_bot', displayName: 'Mivo Assistant' },
             content: isDm
               ? `This is the start of your direct conversation with ${title}. Send a message to say hello!`
               : `Welcome to the beginning of #${title}. Send a message to start collaborating!`,
@@ -107,6 +109,7 @@ export default function ChatScreen() {
   const handleSend = () => {
     if (!inputContent.trim()) return;
 
+    triggerHaptic();
     const replyId = replyingTo && replyingTo.id !== 'welcome-msg' ? replyingTo.id : undefined;
     sendMessage(id, inputContent.trim(), isDm, replyId);
     setInputContent('');
@@ -119,6 +122,7 @@ export default function ChatScreen() {
   };
 
   const handleLaunchRoom = () => {
+    triggerHaptic();
     joinRoom(id, 'VOICE');
     router.push({
       pathname: '/room/[id]',
@@ -133,18 +137,25 @@ export default function ChatScreen() {
         <TouchableOpacity
           testID="chat-back-btn"
           style={styles.backBtn}
-          onPress={() => router.back()}
+          onPress={() => {
+            triggerHaptic();
+            router.back();
+          }}
+          activeOpacity={0.7}
         >
-          <ArrowLeft size={22} color={THEME.colors.textPrimary} />
+          <ArrowLeft size={22} color="#F8FAFC" />
         </TouchableOpacity>
 
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {isDm ? title : `#${title}`}
           </Text>
-          <Text style={styles.headerSubtitle}>
-            {isDm ? 'Direct Conversation' : 'Unified Stage Channel'}
-          </Text>
+          <View style={styles.headerSubtitleRow}>
+            <View style={styles.headerDot} />
+            <Text style={styles.headerSubtitle}>
+              {isDm ? 'Direct Conversation' : 'Unified Stage Channel'}
+            </Text>
+          </View>
         </View>
 
         {/* Room Stage Trigger */}
@@ -154,7 +165,7 @@ export default function ChatScreen() {
           onPress={handleLaunchRoom}
           activeOpacity={0.8}
         >
-          <Radio size={16} color={THEME.colors.accentGreen} />
+          <Radio size={15} color={THEME.colors.accentGreen} />
           <Text style={styles.stageBtnText}>Huddle</Text>
         </TouchableOpacity>
       </View>
@@ -170,6 +181,7 @@ export default function ChatScreen() {
           data={chatMessages}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messagesList}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <MessageBubble
               message={item}
@@ -182,6 +194,11 @@ export default function ChatScreen() {
         {/* Typing indicator */}
         {activeTyping.length > 0 && (
           <View style={styles.typingContainer}>
+            <View style={styles.typingDots}>
+              <View style={[styles.typingDot, styles.dot1]} />
+              <View style={[styles.typingDot, styles.dot2]} />
+              <View style={[styles.typingDot, styles.dot3]} />
+            </View>
             <Text style={styles.typingText}>
               {activeTyping.join(', ')} {activeTyping.length === 1 ? 'is' : 'are'} typing...
             </Text>
@@ -191,6 +208,7 @@ export default function ChatScreen() {
         {/* Reply Preview Bar */}
         {replyingTo && (
           <View style={styles.replyBar}>
+            <View style={styles.replyBarAccent} />
             <View style={styles.replyContent}>
               <Text style={styles.replyingToText}>
                 Replying to {replyingTo.author?.displayName || 'User'}:
@@ -199,27 +217,36 @@ export default function ChatScreen() {
                 {replyingTo.content}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => setReplyingTo(null)}>
-              <X size={18} color={THEME.colors.textSecondary} />
+            <TouchableOpacity
+              onPress={() => setReplyingTo(null)}
+              style={styles.replyCloseBtn}
+            >
+              <X size={16} color="#94A3B8" />
             </TouchableOpacity>
           </View>
         )}
 
         {/* Message Input Box */}
         <View style={styles.inputArea}>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Paperclip size={20} color={THEME.colors.textMuted} />
+          <TouchableOpacity
+            style={styles.iconBtn}
+            activeOpacity={0.7}
+            onPress={triggerSelectionHaptic}
+          >
+            <Paperclip size={19} color="#64748B" />
           </TouchableOpacity>
 
-          <TextInput
-            testID="chat-text-input"
-            placeholder={`Message ${isDm ? title : `#${title}`}...`}
-            placeholderTextColor={THEME.colors.textMuted}
-            value={inputContent}
-            onChangeText={handleInputChange}
-            multiline
-            style={styles.textInput}
-          />
+          <View style={styles.textInputWrapper}>
+            <TextInput
+              testID="chat-text-input"
+              placeholder={`Message ${isDm ? title : `#${title}`}...`}
+              placeholderTextColor="#64748B"
+              value={inputContent}
+              onChangeText={handleInputChange}
+              multiline
+              style={styles.textInput}
+            />
+          </View>
 
           <TouchableOpacity
             testID="chat-send-btn"
@@ -229,8 +256,9 @@ export default function ChatScreen() {
             ]}
             onPress={handleSend}
             disabled={!inputContent.trim()}
+            activeOpacity={0.8}
           >
-            <Send size={18} color="#FFFFFF" />
+            <Send size={16} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -241,7 +269,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    backgroundColor: '#080B11',
   },
   header: {
     flexDirection: 'row',
@@ -249,12 +277,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
-    backgroundColor: THEME.colors.surface,
+    borderBottomColor: '#172033',
+    backgroundColor: '#0D1424',
     gap: 12,
   },
   backBtn: {
-    padding: 4,
+    padding: 6,
+    borderRadius: 8,
   },
   headerTitleContainer: {
     flex: 1,
@@ -262,27 +291,41 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    color: '#F8FAFC',
+    letterSpacing: -0.3,
+  },
+  headerSubtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 1,
+  },
+  headerDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: THEME.colors.accentGreen,
   },
   headerSubtitle: {
     fontSize: 11,
-    color: THEME.colors.textSecondary,
+    color: '#94A3B8',
   },
   stageBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     borderWidth: 1,
-    borderColor: THEME.colors.accentGreen,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
     paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 11,
     borderRadius: THEME.borderRadius.full,
     gap: 6,
   },
   stageBtnText: {
-    color: THEME.colors.accentGreen,
+    color: '#10B981',
     fontSize: 12,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   keyboardContainer: {
     flex: 1,
@@ -293,68 +336,106 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    gap: 8,
   },
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  typingDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: THEME.colors.accentGreen,
+  },
+  dot1: { opacity: 0.4 },
+  dot2: { opacity: 0.7 },
+  dot3: { opacity: 1 },
   typingText: {
     color: THEME.colors.accentGreen,
-    fontSize: 11,
-    fontStyle: 'italic',
+    fontSize: 11.5,
+    fontWeight: '500',
   },
   replyBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: THEME.colors.surfaceElevated,
-    paddingHorizontal: 16,
+    backgroundColor: '#121B2F',
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.border,
+    borderTopColor: '#1E293B',
+  },
+  replyBarAccent: {
+    width: 3,
+    height: '100%',
+    backgroundColor: THEME.colors.primary,
+    borderRadius: 1.5,
+    marginRight: 10,
   },
   replyContent: {
     flex: 1,
     marginRight: 8,
   },
   replyingToText: {
-    color: THEME.colors.primary,
+    color: THEME.colors.primaryLight,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   replySnippet: {
-    color: THEME.colors.textSecondary,
+    color: '#94A3B8',
     fontSize: 12,
+    marginTop: 1,
+  },
+  replyCloseBtn: {
+    padding: 6,
   },
   inputArea: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: '#0D1424',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.border,
+    borderTopColor: '#172033',
     gap: 8,
   },
   iconBtn: {
-    padding: 6,
+    padding: 8,
+    borderRadius: 8,
+  },
+  textInputWrapper: {
+    flex: 1,
+    backgroundColor: '#131C30',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#232F46',
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 4,
   },
   textInput: {
-    flex: 1,
-    color: THEME.colors.textPrimary,
-    fontSize: 15,
+    color: '#F8FAFC',
+    fontSize: 14.5,
     maxHeight: 100,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
   },
   sendBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: THEME.colors.surfaceHover,
+    backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendBtnActive: {
     backgroundColor: THEME.colors.primary,
+    shadowColor: THEME.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 5,
+    elevation: 3,
   },
 });
-

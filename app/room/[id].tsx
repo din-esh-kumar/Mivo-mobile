@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -28,10 +27,10 @@ import {
   PhoneOff,
   Radio,
   MessageSquare,
-  Users,
-  Volume2,
   Send,
+  Users,
 } from 'lucide-react-native';
+import { triggerHaptic } from '../../src/utils/haptics';
 
 export default function RoomStageScreen() {
   const router = useRouter();
@@ -82,13 +81,25 @@ export default function RoomStageScreen() {
 
   const handleSendText = () => {
     if (!chatInput.trim()) return;
+    triggerHaptic();
     sendMessage(roomId, chatInput.trim(), false);
     setChatInput('');
   };
 
   const handleLeave = () => {
+    triggerHaptic();
     leaveRoom();
     router.back();
+  };
+
+  const handleToggleMute = () => {
+    triggerHaptic();
+    toggleMute();
+  };
+
+  const handleToggleVideo = () => {
+    triggerHaptic();
+    toggleVideo();
   };
 
   const formatTimer = (totalSec: number) => {
@@ -137,7 +148,7 @@ export default function RoomStageScreen() {
 
         {/* Live Stage Pill */}
         <View style={styles.liveTag}>
-          <Radio size={14} color="#FFFFFF" />
+          <Radio size={13} color="#FFFFFF" />
           <Text style={styles.liveTagText}>LIVE</Text>
         </View>
       </View>
@@ -162,7 +173,7 @@ export default function RoomStageScreen() {
           >
             {allParticipants.map((member) => (
               <View key={member.userId} style={styles.audioStripItem}>
-                <Avatar url={member.avatarUrl} name={member.displayName} size={32} />
+                <Avatar url={member.avatarUrl} name={member.displayName} size={28} />
                 <Text style={styles.stripName} numberOfLines={1}>
                   {member.displayName}
                 </Text>
@@ -199,7 +210,7 @@ export default function RoomStageScreen() {
             <TextInput
               testID="inline-chat-input"
               placeholder={`Message #${roomName} while on stage...`}
-              placeholderTextColor={THEME.colors.textMuted}
+              placeholderTextColor="#64748B"
               value={chatInput}
               onChangeText={setChatInput}
               style={styles.inlineTextInput}
@@ -212,8 +223,9 @@ export default function RoomStageScreen() {
               ]}
               onPress={handleSendText}
               disabled={!chatInput.trim()}
+              activeOpacity={0.8}
             >
-              <Send size={16} color="#FFFFFF" />
+              <Send size={15} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -241,8 +253,8 @@ export default function RoomStageScreen() {
         <TouchableOpacity
           testID="toggle-mic-btn"
           style={[styles.controlBtn, isMuted ? styles.controlBtnMuted : styles.controlBtnActive]}
-          onPress={toggleMute}
-          activeOpacity={0.8}
+          onPress={handleToggleMute}
+          activeOpacity={0.82}
         >
           {isMuted ? (
             <MicOff size={22} color="#EF4444" />
@@ -258,8 +270,8 @@ export default function RoomStageScreen() {
             styles.controlBtn,
             isVideoEnabled ? styles.controlBtnActive : styles.controlBtnMuted,
           ]}
-          onPress={toggleVideo}
-          activeOpacity={0.8}
+          onPress={handleToggleVideo}
+          activeOpacity={0.82}
         >
           {isVideoEnabled ? (
             <Video size={22} color="#FFFFFF" />
@@ -273,14 +285,15 @@ export default function RoomStageScreen() {
           testID="in-call-chat-btn"
           style={styles.controlBtnSecondary}
           onPress={() => {
+            triggerHaptic();
             router.push({
               pathname: '/chat/[id]',
               params: { id: roomId, name: roomName, type: 'channel' },
             });
           }}
-          activeOpacity={0.8}
+          activeOpacity={0.82}
         >
-          <MessageSquare size={20} color="#FFFFFF" />
+          <MessageSquare size={20} color="#CBD5E1" />
         </TouchableOpacity>
 
         {/* Leave Room Button */}
@@ -288,7 +301,7 @@ export default function RoomStageScreen() {
           testID="leave-room-btn"
           style={styles.leaveBtn}
           onPress={handleLeave}
-          activeOpacity={0.8}
+          activeOpacity={0.82}
         >
           <PhoneOff size={22} color="#FFFFFF" />
         </TouchableOpacity>
@@ -309,7 +322,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    borderBottomColor: '#172033',
+    backgroundColor: '#0D1424',
   },
   headerInfo: {
     flex: 1,
@@ -317,7 +331,8 @@ const styles = StyleSheet.create({
   roomTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#F8FAFC',
+    letterSpacing: -0.3,
     marginBottom: 4,
   },
   timerBadge: {
@@ -326,18 +341,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   redDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
     backgroundColor: THEME.colors.accentRed,
   },
   timerText: {
-    color: THEME.colors.textSecondary,
+    color: '#CBD5E1',
     fontSize: 12,
     fontWeight: '600',
   },
   participantCount: {
-    color: THEME.colors.textMuted,
+    color: '#64748B',
     fontSize: 12,
   },
   liveTag: {
@@ -345,23 +360,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: THEME.colors.accentRed,
     paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     borderRadius: THEME.borderRadius.full,
-    gap: 4,
+    gap: 5,
+    shadowColor: THEME.colors.accentRed,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 3,
   },
   liveTagText: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
   modeSelectorContainer: {
     paddingVertical: 10,
     alignItems: 'center',
+    backgroundColor: '#0B0F1A',
+    borderBottomWidth: 1,
+    borderBottomColor: '#172033',
   },
   gridContent: {
     padding: 10,
-    paddingBottom: 90,
+    paddingBottom: 95,
   },
   grid: {
     flexDirection: 'row',
@@ -376,28 +399,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(22, 31, 48, 0.94)',
+    backgroundColor: 'rgba(16, 23, 38, 0.94)',
     borderRadius: THEME.borderRadius.full,
     paddingVertical: 10,
     paddingHorizontal: 16,
     gap: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
-    shadowRadius: 16,
+    shadowRadius: 18,
     elevation: 8,
   },
   controlBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
   controlBtnActive: {
     backgroundColor: THEME.colors.primary,
+    shadowColor: THEME.colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
   },
   controlBtnMuted: {
     backgroundColor: '#1E293B',
@@ -405,9 +433,9 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
   },
   controlBtnSecondary: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
@@ -415,9 +443,9 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
   },
   leaveBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: THEME.colors.accentRed,
     alignItems: 'center',
     justifyContent: 'center',
@@ -429,33 +457,33 @@ const styles = StyleSheet.create({
   },
   inlineChatContainer: {
     flex: 1,
-    paddingBottom: 85,
+    paddingBottom: 90,
   },
   audioStrip: {
-    maxHeight: 60,
+    maxHeight: 58,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
-    backgroundColor: THEME.colors.surface,
+    borderBottomColor: '#172033',
+    backgroundColor: '#0D1424',
   },
   audioStripContent: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 12,
+    paddingVertical: 9,
+    gap: 10,
     alignItems: 'center',
   },
   audioStripItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surfaceElevated,
+    backgroundColor: '#131C2E',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: THEME.borderRadius.full,
     gap: 6,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: '#212D45',
   },
   stripName: {
-    color: THEME.colors.textPrimary,
+    color: '#F8FAFC',
     fontSize: 12,
     fontWeight: '500',
     maxWidth: 80,
@@ -474,30 +502,30 @@ const styles = StyleSheet.create({
   emptyInlineTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    color: '#F8FAFC',
     marginBottom: 6,
   },
   emptyInlineSub: {
     fontSize: 13,
-    color: THEME.colors.textMuted,
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 18,
   },
   inlineInputArea: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: '#101625',
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginHorizontal: 12,
     borderRadius: THEME.borderRadius.lg,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: '#202B3F',
     gap: 8,
   },
   inlineTextInput: {
     flex: 1,
-    color: THEME.colors.textPrimary,
+    color: '#F8FAFC',
     fontSize: 14,
     paddingVertical: 4,
   },
@@ -505,7 +533,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: THEME.colors.surfaceHover,
+    backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -513,4 +541,3 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.primary,
   },
 });
-

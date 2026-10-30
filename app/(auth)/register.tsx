@@ -15,6 +15,7 @@ import { Input } from '../../src/components/Input';
 import { Button } from '../../src/components/Button';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { Mail, Lock, User, AtSign, ArrowLeft } from 'lucide-react-native';
+import { triggerHaptic } from '../../src/utils/haptics';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const handleRegister = async () => {
+    triggerHaptic();
     if (!displayName.trim() || !username.trim() || !email.trim() || !password.trim()) {
       setError('Please fill in all fields');
       return;
@@ -66,9 +68,13 @@ export default function RegisterScreen() {
           <TouchableOpacity
             testID="back-to-login-btn"
             style={styles.backBtn}
-            onPress={() => router.back()}
+            onPress={() => {
+              triggerHaptic();
+              router.back();
+            }}
+            activeOpacity={0.7}
           >
-            <ArrowLeft size={20} color={THEME.colors.textPrimary} />
+            <ArrowLeft size={18} color="#94A3B8" />
             <Text style={styles.backBtnText}>Back to Sign In</Text>
           </TouchableOpacity>
 
@@ -94,7 +100,7 @@ export default function RegisterScreen() {
               placeholder="Alex Mercer"
               value={displayName}
               onChangeText={setDisplayName}
-              leftIcon={<User size={18} color={THEME.colors.textMuted} />}
+              leftIcon={<User size={18} color="#64748B" />}
             />
 
             <Input
@@ -104,7 +110,7 @@ export default function RegisterScreen() {
               autoCapitalize="none"
               value={username}
               onChangeText={setUsername}
-              leftIcon={<AtSign size={18} color={THEME.colors.textMuted} />}
+              leftIcon={<AtSign size={18} color="#64748B" />}
             />
 
             <Input
@@ -115,7 +121,7 @@ export default function RegisterScreen() {
               autoCapitalize="none"
               value={email}
               onChangeText={setEmail}
-              leftIcon={<Mail size={18} color={THEME.colors.textMuted} />}
+              leftIcon={<Mail size={18} color="#64748B" />}
             />
 
             <Input
@@ -125,7 +131,7 @@ export default function RegisterScreen() {
               isPassword
               value={password}
               onChangeText={setPassword}
-              leftIcon={<Lock size={18} color={THEME.colors.textMuted} />}
+              leftIcon={<Lock size={18} color="#64748B" />}
             />
 
             <Button
@@ -143,7 +149,11 @@ export default function RegisterScreen() {
             <Text style={styles.footerText}>Already registered?</Text>
             <TouchableOpacity
               testID="already-have-account-link"
-              onPress={() => router.back()}
+              onPress={() => {
+                triggerHaptic();
+                router.back();
+              }}
+              activeOpacity={0.7}
             >
               <Text style={styles.loginLink}> Sign In</Text>
             </TouchableOpacity>
@@ -157,7 +167,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    backgroundColor: '#080B11',
   },
   keyboardView: {
     flex: 1,
@@ -174,32 +184,35 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 24,
     alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
   },
   backBtnText: {
-    color: THEME.colors.textSecondary,
+    color: '#94A3B8',
     fontSize: 14,
     fontWeight: '500',
   },
   header: {
-    marginBottom: 28,
+    marginBottom: 24,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    color: '#F8FAFC',
+    letterSpacing: -0.4,
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: THEME.colors.textSecondary,
+    color: '#94A3B8',
     lineHeight: 20,
   },
   form: {
     width: '100%',
   },
   errorBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderColor: THEME.colors.accentRed,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderColor: 'rgba(239, 68, 68, 0.35)',
     borderWidth: 1,
     padding: 12,
     borderRadius: THEME.borderRadius.md,
@@ -209,6 +222,7 @@ const styles = StyleSheet.create({
     color: '#FCA5A5',
     fontSize: 13,
     textAlign: 'center',
+    fontWeight: '500',
   },
   registerBtn: {
     marginTop: 12,
@@ -219,13 +233,12 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
   footerText: {
-    color: THEME.colors.textSecondary,
+    color: '#94A3B8',
     fontSize: 14,
   },
   loginLink: {
-    color: THEME.colors.primary,
+    color: THEME.colors.primaryLight,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
-

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +13,8 @@ import { Input } from '../../src/components/Input';
 import { Button } from '../../src/components/Button';
 import { useConfigStore } from '../../src/stores/useConfigStore';
 import { showCrossPlatformAlert } from '../../src/utils/dialog';
-import { Server, ArrowLeft, RefreshCw, Smartphone, Laptop } from 'lucide-react-native';
+import { Server, ArrowLeft, Smartphone, Laptop, Radio, Check } from 'lucide-react-native';
+import { triggerHaptic } from '../../src/utils/haptics';
 
 export default function ServerSettingsScreen() {
   const router = useRouter();
@@ -24,6 +24,7 @@ export default function ServerSettingsScreen() {
   const [inputWs, setInputWs] = useState(wsUrl);
 
   const handleSave = async () => {
+    triggerHaptic();
     if (!inputApi.trim() || !inputWs.trim()) {
       showCrossPlatformAlert('Error', 'API and WebSocket URLs cannot be empty');
       return;
@@ -36,11 +37,13 @@ export default function ServerSettingsScreen() {
   };
 
   const setPreset = (host: string) => {
+    triggerHaptic();
     setInputApi(`http://${host}:4000/api/v1`);
     setInputWs(`http://${host}:4000`);
   };
 
   const handleReset = async () => {
+    triggerHaptic();
     await resetToDefaults();
     setInputApi('http://localhost:4000/api/v1');
     setInputWs('http://localhost:4000');
@@ -53,16 +56,22 @@ export default function ServerSettingsScreen() {
         <TouchableOpacity
           testID="server-back-btn"
           style={styles.backBtn}
-          onPress={() => router.back()}
+          onPress={() => {
+            triggerHaptic();
+            router.back();
+          }}
+          activeOpacity={0.7}
         >
-          <ArrowLeft size={22} color={THEME.colors.textPrimary} />
+          <ArrowLeft size={22} color="#F8FAFC" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Server Endpoints</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.introCard}>
-          <Server size={28} color={THEME.colors.primary} />
+          <View style={styles.introIconBubble}>
+            <Server size={24} color={THEME.colors.primary} />
+          </View>
           <Text style={styles.introTitle}>Connect to Mivo Backend</Text>
           <Text style={styles.introBody}>
             When testing on a physical phone via Expo Go, replace "localhost" with your computer's local Wi-Fi IP address (e.g. 192.168.1.100).
@@ -76,8 +85,9 @@ export default function ServerSettingsScreen() {
             testID="preset-wifi-btn"
             style={styles.presetBtn}
             onPress={() => setPreset('192.168.1.10')}
+            activeOpacity={0.8}
           >
-            <Smartphone size={16} color={THEME.colors.accentGreen} />
+            <Smartphone size={15} color={THEME.colors.accentGreen} />
             <Text style={styles.presetText}>Wi-Fi (192.168.1.10)</Text>
           </TouchableOpacity>
 
@@ -85,8 +95,9 @@ export default function ServerSettingsScreen() {
             testID="preset-localhost-btn"
             style={styles.presetBtn}
             onPress={() => setPreset('localhost')}
+            activeOpacity={0.8}
           >
-            <Laptop size={16} color={THEME.colors.textSecondary} />
+            <Laptop size={15} color="#94A3B8" />
             <Text style={styles.presetText}>Localhost</Text>
           </TouchableOpacity>
 
@@ -94,8 +105,9 @@ export default function ServerSettingsScreen() {
             testID="preset-emulator-btn"
             style={styles.presetBtn}
             onPress={() => setPreset('10.0.2.2')}
+            activeOpacity={0.8}
           >
-            <Smartphone size={16} color={THEME.colors.textSecondary} />
+            <Smartphone size={15} color="#94A3B8" />
             <Text style={styles.presetText}>Android (10.0.2.2)</Text>
           </TouchableOpacity>
         </View>
@@ -144,7 +156,7 @@ export default function ServerSettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    backgroundColor: '#080B11',
   },
   header: {
     flexDirection: 'row',
@@ -152,54 +164,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    borderBottomColor: '#172033',
+    backgroundColor: '#0D1424',
     gap: 12,
   },
   backBtn: {
-    padding: 4,
+    padding: 6,
+    borderRadius: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    color: '#F8FAFC',
+    letterSpacing: -0.3,
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 40,
   },
   introCard: {
-    backgroundColor: THEME.colors.surface,
-    padding: 16,
+    backgroundColor: '#101625',
+    padding: 18,
     borderRadius: THEME.borderRadius.lg,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: '#1D273B',
     alignItems: 'center',
     textAlign: 'center',
     marginBottom: 24,
   },
+  introIconBubble: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+  },
   introTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.colors.textPrimary,
-    marginTop: 8,
+    color: '#F8FAFC',
     marginBottom: 6,
+    letterSpacing: -0.2,
   },
   introBody: {
     fontSize: 13,
-    color: THEME.colors.textSecondary,
+    color: '#94A3B8',
     textAlign: 'center',
     lineHeight: 18,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: THEME.colors.textMuted,
+    color: '#64748B',
     letterSpacing: 0.8,
     marginBottom: 10,
     marginLeft: 4,
   },
   presetsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
     marginBottom: 24,
   },
   presetBtn: {
@@ -207,16 +234,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: '#101625',
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: '#1D273B',
     paddingVertical: 10,
+    paddingHorizontal: 4,
     borderRadius: THEME.borderRadius.md,
-    gap: 8,
+    gap: 6,
   },
   presetText: {
-    color: THEME.colors.textPrimary,
-    fontSize: 13,
+    color: '#E2E8F0',
+    fontSize: 11.5,
     fontWeight: '600',
   },
   saveBtn: {
@@ -226,4 +254,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-

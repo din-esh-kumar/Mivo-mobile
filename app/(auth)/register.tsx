@@ -14,7 +14,7 @@ import { THEME } from '../../src/constants/theme';
 import { Input } from '../../src/components/Input';
 import { Button } from '../../src/components/Button';
 import { useAuthStore } from '../../src/stores/useAuthStore';
-import { Mail, Lock, User, AtSign, ArrowLeft } from 'lucide-react-native';
+import { Mail, Lock, User, AtSign, ArrowLeft, Check, Shield } from 'lucide-react-native';
 import { triggerHaptic } from '../../src/utils/haptics';
 
 export default function RegisterScreen() {
@@ -26,6 +26,30 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const calculatePasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: '', color: '#334155' };
+    let score = 0;
+    if (pass.length >= 8) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+    if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+
+    switch (score) {
+      case 1:
+        return { score: 1, label: 'Weak', color: '#EF4444' };
+      case 2:
+        return { score: 2, label: 'Fair', color: '#F59E0B' };
+      case 3:
+        return { score: 3, label: 'Good', color: '#10B981' };
+      case 4:
+        return { score: 4, label: 'Strong', color: '#06B6D4' };
+      default:
+        return { score: 0, label: 'Too short', color: '#EF4444' };
+    }
+  };
+
+  const strength = calculatePasswordStrength(password);
 
   const handleRegister = async () => {
     triggerHaptic();
@@ -134,6 +158,26 @@ export default function RegisterScreen() {
               leftIcon={<Lock size={18} color="#64748B" />}
             />
 
+            {/* Password Strength Indicator */}
+            {password.length > 0 && (
+              <View style={styles.strengthContainer}>
+                <View style={styles.strengthBarsRow}>
+                  {[1, 2, 3, 4].map((level) => (
+                    <View
+                      key={level}
+                      style={[
+                        styles.strengthBar,
+                        level <= strength.score && { backgroundColor: strength.color },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={[styles.strengthLabel, { color: strength.color }]}>
+                  {strength.label}
+                </Text>
+              </View>
+            )}
+
             <Button
               testID="register-submit-btn"
               title="Create Account"
@@ -182,7 +226,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 24,
+    marginBottom: 20,
     alignSelf: 'flex-start',
     paddingVertical: 6,
     paddingHorizontal: 4,
@@ -224,8 +268,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+  strengthContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: -8,
+    marginBottom: 14,
+    paddingHorizontal: 2,
+  },
+  strengthBarsRow: {
+    flexDirection: 'row',
+    gap: 4,
+    flex: 1,
+    marginRight: 10,
+  },
+  strengthBar: {
+    flex: 1,
+    height: 3.5,
+    backgroundColor: '#1E293B',
+    borderRadius: 2,
+  },
+  strengthLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   registerBtn: {
-    marginTop: 12,
+    marginTop: 8,
   },
   footer: {
     flexDirection: 'row',

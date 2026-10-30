@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,9 +27,17 @@ import {
   Radio,
   X,
   Smile,
-  Sparkles,
+  Mic,
+  Image as ImageIcon,
+  FileText,
+  Code,
+  Info,
+  Users,
+  Bell,
 } from 'lucide-react-native';
 import { triggerHaptic, triggerSelectionHaptic } from '../../src/utils/haptics';
+
+const QUICK_EMOJIS = ['👍', '🔥', '🚀', '👏', '❤️', '🎉', '💡', '👀'];
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -55,6 +64,10 @@ export default function ChatScreen() {
 
   const [inputContent, setInputContent] = useState('');
   const [replyingTo, setReplyingTo] = useState<ChatMessageDTO | null>(null);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+
   const flatListRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -121,6 +134,37 @@ export default function ChatScreen() {
     }, 100);
   };
 
+  const handleAddEmoji = (emoji: string) => {
+    triggerSelectionHaptic();
+    setInputContent((prev) => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const handleAttachSnippet = (type: 'audio' | 'code' | 'image' | 'doc') => {
+    triggerHaptic();
+    setShowAttachmentMenu(false);
+    let sampleContent = '';
+    switch (type) {
+      case 'audio':
+        sampleContent = '🎙️ [Voice Memo: 0:24 — WebRTC mesh sync notes]';
+        break;
+      case 'code':
+        sampleContent = '```typescript\nconst stage = await mivo.joinStage("mesh-core");\n```';
+        break;
+      case 'image':
+        sampleContent = '🖼️ [Screenshot: mobile_stage_layout.png — 1.4 MB]';
+        break;
+      case 'doc':
+        sampleContent = '📄 [Document: Q4_Architecture_Spec.pdf — 840 KB]';
+        break;
+    }
+    const replyId = replyingTo && replyingTo.id !== 'welcome-msg' ? replyingTo.id : undefined;
+    sendMessage(id, sampleContent, isDm, replyId);
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
   const handleLaunchRoom = () => {
     triggerHaptic();
     joinRoom(id, 'VOICE');
@@ -146,7 +190,14 @@ export default function ChatScreen() {
           <ArrowLeft size={22} color="#F8FAFC" />
         </TouchableOpacity>
 
-        <View style={styles.headerTitleContainer}>
+        <TouchableOpacity
+          style={styles.headerTitleContainer}
+          activeOpacity={0.8}
+          onPress={() => {
+            triggerSelectionHaptic();
+            setShowInfoModal(true);
+          }}
+        >
           <Text style={styles.headerTitle} numberOfLines={1}>
             {isDm ? title : `#${title}`}
           </Text>
@@ -156,7 +207,7 @@ export default function ChatScreen() {
               {isDm ? 'Direct Conversation' : 'Unified Stage Channel'}
             </Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Room Stage Trigger */}
         <TouchableOpacity
@@ -226,14 +277,50 @@ export default function ChatScreen() {
           </View>
         )}
 
+        {/* Quick Emoji Strip Drawer */}
+        {showEmojiPicker && (
+          <View style={styles.emojiPickerBar}>
+            {QUICK_EMOJIS.map((emoji) => (
+              <TouchableOpacity
+                key={emoji}
+                onPress={() => handleAddEmoji(emoji)}
+                style={styles.emojiBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.emojiChar}>{emoji}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              onPress={() => setShowEmojiPicker(false)}
+              style={styles.emojiClose}
+            >
+              <X size={14} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Message Input Box */}
         <View style={styles.inputArea}>
           <TouchableOpacity
             style={styles.iconBtn}
             activeOpacity={0.7}
-            onPress={triggerSelectionHaptic}
+            onPress={() => {
+              triggerSelectionHaptic();
+              setShowAttachmentMenu(true);
+            }}
           >
-            <Paperclip size={19} color="#64748B" />
+            <Paperclip size={19} color="#94A3B8" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.iconBtn}
+            activeOpacity={0.7}
+            onPress={() => {
+              triggerSelectionHaptic();
+              setShowEmojiPicker((prev) => !prev);
+            }}
+          >
+            <Smile size={19} color={showEmojiPicker ? THEME.colors.primaryLight : '#94A3B8'} />
           </TouchableOpacity>
 
           <View style={styles.textInputWrapper}>
@@ -262,6 +349,110 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Attachment Action Sheet Modal */}
+      <Modal
+        visible={showAttachmentMenu}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAttachmentMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowAttachmentMenu(false)}
+        >
+          <View style={styles.attachmentSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Share Content in #{title}</Text>
+            <View style={styles.attachmentGrid}>
+              <TouchableOpacity
+                style={styles.attachmentOption}
+                onPress={() => handleAttachSnippet('audio')}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                  <Mic size={22} color="#10B981" />
+                </View>
+                <Text style={styles.attachOptionLabel}>Voice Memo</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.attachmentOption}
+                onPress={() => handleAttachSnippet('image')}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: 'rgba(99, 102, 241, 0.15)' }]}>
+                  <ImageIcon size={22} color="#818CF8" />
+                </View>
+                <Text style={styles.attachOptionLabel}>Photo / Media</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.attachmentOption}
+                onPress={() => handleAttachSnippet('code')}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: 'rgba(6, 182, 212, 0.15)' }]}>
+                  <Code size={22} color="#06B6D4" />
+                </View>
+                <Text style={styles.attachOptionLabel}>Code Snippet</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.attachmentOption}
+                onPress={() => handleAttachSnippet('doc')}
+              >
+                <View style={[styles.attachIconCircle, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
+                  <FileText size={22} color="#F59E0B" />
+                </View>
+                <Text style={styles.attachOptionLabel}>Document</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Channel Information Modal */}
+      <Modal
+        visible={showInfoModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowInfoModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowInfoModal(false)}
+        >
+          <View style={styles.infoModalCard}>
+            <View style={styles.infoModalHeader}>
+              <Text style={styles.infoModalTitle}>{isDm ? title : `#${title}`}</Text>
+              <TouchableOpacity onPress={() => setShowInfoModal(false)}>
+                <X size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.infoModalSub}>
+              {isDm
+                ? 'Direct end-to-end synchronized team conversation'
+                : 'Primary unified stage channel with voice, video, and screen sharing.'}
+            </Text>
+
+            <View style={styles.infoStatsRow}>
+              <View style={styles.infoStatItem}>
+                <Users size={16} color="#818CF8" />
+                <Text style={styles.infoStatText}>12 Members</Text>
+              </View>
+              <View style={styles.infoStatItem}>
+                <Radio size={16} color="#10B981" />
+                <Text style={styles.infoStatText}>Stage Ready</Text>
+              </View>
+              <View style={styles.infoStatItem}>
+                <Bell size={16} color="#F59E0B" />
+                <Text style={styles.infoStatText}>Alerts On</Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -394,18 +585,38 @@ const styles = StyleSheet.create({
   replyCloseBtn: {
     padding: 6,
   },
+  emojiPickerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#121B2F',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#1C273C',
+    gap: 8,
+  },
+  emojiBtn: {
+    padding: 4,
+  },
+  emojiChar: {
+    fontSize: 20,
+  },
+  emojiClose: {
+    marginLeft: 'auto',
+    padding: 4,
+  },
   inputArea: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#0D1424',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#172033',
-    gap: 8,
+    gap: 6,
   },
   iconBtn: {
-    padding: 8,
+    padding: 7,
     borderRadius: 8,
   },
   textInputWrapper: {
@@ -437,5 +648,97 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 5,
     elevation: 3,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  attachmentSheet: {
+    backgroundColor: '#101726',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 36,
+    borderTopWidth: 1,
+    borderColor: '#232F45',
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#334155',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    marginBottom: 16,
+  },
+  attachmentGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  attachmentOption: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  attachIconCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachOptionLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#CBD5E1',
+  },
+  infoModalCard: {
+    margin: 20,
+    backgroundColor: '#101726',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#232F45',
+    alignSelf: 'center',
+    width: '90%',
+  },
+  infoModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  infoModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  infoModalSub: {
+    fontSize: 13,
+    color: '#94A3B8',
+    lineHeight: 19,
+    marginBottom: 16,
+  },
+  infoStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#1E293B',
+  },
+  infoStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  infoStatText: {
+    fontSize: 12,
+    color: '#CBD5E1',
+    fontWeight: '600',
   },
 });

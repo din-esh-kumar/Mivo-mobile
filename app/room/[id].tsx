@@ -29,8 +29,15 @@ import {
   MessageSquare,
   Send,
   Users,
+  Hand,
+  Volume2,
+  VolumeX,
+  Sparkles,
+  Wifi,
 } from 'lucide-react-native';
-import { triggerHaptic } from '../../src/utils/haptics';
+import { triggerHaptic, triggerSelectionHaptic } from '../../src/utils/haptics';
+
+const STAGE_REACTIONS = ['👏', '🔥', '❤️', '🎉', '💡'];
 
 export default function RoomStageScreen() {
   const router = useRouter();
@@ -60,6 +67,9 @@ export default function RoomStageScreen() {
   const { messages, loadChannelMessages, sendMessage } = useConversationStore();
   const [chatInput, setChatInput] = useState('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isHandRaised, setIsHandRaised] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  const [floatingReaction, setFloatingReaction] = useState<{ id: number; emoji: string } | null>(null);
 
   useEffect(() => {
     joinRoom(roomId, params.mode || 'VOICE');
@@ -100,6 +110,24 @@ export default function RoomStageScreen() {
   const handleToggleVideo = () => {
     triggerHaptic();
     toggleVideo();
+  };
+
+  const handleToggleHand = () => {
+    triggerHaptic();
+    setIsHandRaised((prev) => !prev);
+  };
+
+  const handleToggleSpeaker = () => {
+    triggerHaptic();
+    setIsSpeakerOn((prev) => !prev);
+  };
+
+  const handleSendReaction = (emoji: string) => {
+    triggerSelectionHaptic();
+    setFloatingReaction({ id: Date.now(), emoji });
+    setTimeout(() => {
+      setFloatingReaction(null);
+    }, 2200);
   };
 
   const formatTimer = (totalSec: number) => {
@@ -146,10 +174,17 @@ export default function RoomStageScreen() {
           </View>
         </View>
 
-        {/* Live Stage Pill */}
-        <View style={styles.liveTag}>
-          <Radio size={13} color="#FFFFFF" />
-          <Text style={styles.liveTagText}>LIVE</Text>
+        {/* Live Stage Pill & Audio Quality Tag */}
+        <View style={styles.headerRightArea}>
+          <View style={styles.meshQualityBadge}>
+            <Wifi size={11} color="#10B981" />
+            <Text style={styles.meshQualityText}>48kHz Mesh</Text>
+          </View>
+
+          <View style={styles.liveTag}>
+            <Radio size={13} color="#FFFFFF" />
+            <Text style={styles.liveTagText}>LIVE</Text>
+          </View>
         </View>
       </View>
 
@@ -160,6 +195,14 @@ export default function RoomStageScreen() {
           onSelectMode={(mode) => setMode(mode)}
         />
       </View>
+
+      {/* Floating Reaction Overlay */}
+      {floatingReaction && (
+        <View style={styles.floatingReactionContainer}>
+          <Text style={styles.floatingReactionEmoji}>{floatingReaction.emoji}</Text>
+          <Text style={styles.floatingReactionSender}>You reacted</Text>
+        </View>
+      )}
 
       {/* Participants Content: Video/Audio Grid OR Inline Room Discussion */}
       {activeMode === 'TEXT' ? (
@@ -231,20 +274,36 @@ export default function RoomStageScreen() {
         </View>
       ) : (
         /* Participants Video / Audio Grid */
-        <ScrollView
-          contentContainerStyle={styles.gridContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.grid}>
-            {allParticipants.map((member) => (
-              <ParticipantTile
-                key={member.userId}
-                member={member}
-                isCurrentUser={member.userId === currentUser?.id || member.userId === 'me'}
-              />
+        <View style={styles.stageGridWrapper}>
+          <ScrollView
+            contentContainerStyle={styles.gridContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.grid}>
+              {allParticipants.map((member) => (
+                <ParticipantTile
+                  key={member.userId}
+                  member={member}
+                  isCurrentUser={member.userId === currentUser?.id || member.userId === 'me'}
+                />
+              ))}
+            </View>
+          </ScrollView>
+
+          {/* Quick Stage Emoji Reactions Strip */}
+          <View style={styles.stageReactionsBar}>
+            {STAGE_REACTIONS.map((emoji) => (
+              <TouchableOpacity
+                key={emoji}
+                style={styles.reactionBtn}
+                onPress={() => handleSendReaction(emoji)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.reactionBtnEmoji}>{emoji}</Text>
+              </TouchableOpacity>
             ))}
           </View>
-        </ScrollView>
+        </View>
       )}
 
       {/* Bottom Media Controls Dock */}
@@ -277,6 +336,28 @@ export default function RoomStageScreen() {
             <Video size={22} color="#FFFFFF" />
           ) : (
             <VideoOff size={22} color="#94A3B8" />
+          )}
+        </TouchableOpacity>
+
+        {/* Raise Hand Button */}
+        <TouchableOpacity
+          style={[styles.controlBtnSecondary, isHandRaised && styles.controlBtnHandRaised]}
+          onPress={handleToggleHand}
+          activeOpacity={0.82}
+        >
+          <Hand size={20} color={isHandRaised ? '#F59E0B' : '#CBD5E1'} />
+        </TouchableOpacity>
+
+        {/* Speaker Output Route Button */}
+        <TouchableOpacity
+          style={styles.controlBtnSecondary}
+          onPress={handleToggleSpeaker}
+          activeOpacity={0.82}
+        >
+          {isSpeakerOn ? (
+            <Volume2 size={20} color="#CBD5E1" />
+          ) : (
+            <VolumeX size={20} color="#94A3B8" />
           )}
         </TouchableOpacity>
 
@@ -355,6 +436,27 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 12,
   },
+  headerRightArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  meshQualityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  meshQualityText: {
+    fontSize: 10,
+    color: '#10B981',
+    fontWeight: '700',
+  },
   liveTag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -382,28 +484,72 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#172033',
   },
+  floatingReactionContainer: {
+    position: 'absolute',
+    top: 140,
+    alignSelf: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 23, 38, 0.92)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    zIndex: 10,
+  },
+  floatingReactionEmoji: {
+    fontSize: 32,
+  },
+  floatingReactionSender: {
+    fontSize: 10.5,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  stageGridWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   gridContent: {
     padding: 10,
-    paddingBottom: 95,
+    paddingBottom: 130,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
+  stageReactionsBar: {
+    position: 'absolute',
+    bottom: 84,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    backgroundColor: 'rgba(16, 23, 38, 0.85)',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 24,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  reactionBtn: {
+    padding: 4,
+  },
+  reactionBtnEmoji: {
+    fontSize: 20,
+  },
   controlsDock: {
     position: 'absolute',
-    bottom: 24,
-    left: 20,
-    right: 20,
+    bottom: 20,
+    left: 12,
+    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     backgroundColor: 'rgba(16, 23, 38, 0.94)',
     borderRadius: THEME.borderRadius.full,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.12)',
     shadowColor: '#000000',
@@ -413,9 +559,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   controlBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -433,19 +579,23 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
   },
   controlBtnSecondary: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#334155',
   },
+  controlBtnHandRaised: {
+    backgroundColor: 'rgba(245, 158, 11, 0.25)',
+    borderColor: '#F59E0B',
+  },
   leaveBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: THEME.colors.accentRed,
     alignItems: 'center',
     justifyContent: 'center',

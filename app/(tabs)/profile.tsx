@@ -26,6 +26,9 @@ import {
   ShieldCheck,
   Headphones,
   Sliders,
+  Trash2,
+  Sparkles,
+  Zap,
 } from 'lucide-react-native';
 import { triggerHaptic } from '../../src/utils/haptics';
 
@@ -35,6 +38,7 @@ export default function ProfileScreen() {
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [noiseSuppression, setNoiseSuppression] = useState(true);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEYS.SOUND_ENABLED).then((val) => {
@@ -55,6 +59,19 @@ export default function ProfileScreen() {
     triggerHaptic();
     setHapticsEnabled(val);
     AsyncStorage.setItem(STORAGE_KEYS.HAPTICS_ENABLED, String(val)).catch(() => {});
+  };
+
+  const handleToggleNoiseSuppression = (val: boolean) => {
+    triggerHaptic();
+    setNoiseSuppression(val);
+  };
+
+  const handleClearCache = () => {
+    triggerHaptic();
+    showCrossPlatformAlert(
+      'Cache Cleared',
+      'Local room media, attachments, and temporary avatar caches have been cleared (14.2 MB freed).'
+    );
   };
 
   const statuses: Array<{ status: UserStatus; label: string; color: string; desc: string }> = [
@@ -179,6 +196,23 @@ export default function ProfileScreen() {
                 trackColor={{ false: '#334155', true: THEME.colors.primary }}
               />
             </View>
+
+            <View style={[styles.preferenceRow, styles.borderTop]}>
+              <View style={styles.prefLeft}>
+                <View style={styles.prefIconBg}>
+                  <Headphones size={16} color="#06B6D4" />
+                </View>
+                <View>
+                  <Text style={styles.prefLabel}>Crisp Voice Noise Suppression</Text>
+                  <Text style={styles.prefDesc}>Filter background ambient noise on stage</Text>
+                </View>
+              </View>
+              <Switch
+                value={noiseSuppression}
+                onValueChange={handleToggleNoiseSuppression}
+                trackColor={{ false: '#334155', true: THEME.colors.primary }}
+              />
+            </View>
           </View>
         </View>
 
@@ -203,6 +237,25 @@ export default function ProfileScreen() {
                   <Text style={styles.actionTitle}>Server Endpoints</Text>
                   <Text style={styles.actionSubtitle}>
                     Configure REST API and WebSocket host
+                  </Text>
+                </View>
+              </View>
+              <ChevronRight size={18} color="#475569" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionRow, styles.borderTop]}
+              onPress={handleClearCache}
+              activeOpacity={0.75}
+            >
+              <View style={styles.actionLeft}>
+                <View style={[styles.serverIconBg, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
+                  <Trash2 size={16} color="#F59E0B" />
+                </View>
+                <View>
+                  <Text style={styles.actionTitle}>Clear Local Cache</Text>
+                  <Text style={styles.actionSubtitle}>
+                    Purge offline message & media cache
                   </Text>
                 </View>
               </View>

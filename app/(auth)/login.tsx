@@ -15,6 +15,7 @@ import { Input } from '../../src/components/Input';
 import { Button } from '../../src/components/Button';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { Mail, Lock, Radio, Server, Sparkles } from 'lucide-react-native';
+import { showCrossPlatformAlert } from '../../src/utils/dialog';
 import { triggerHaptic } from '../../src/utils/haptics';
 
 export default function LoginScreen() {
@@ -62,6 +63,14 @@ export default function LoginScreen() {
     } else {
       setError(guestRes.error || seedRes.error || 'Failed to create demo session');
     }
+  };
+
+  const handleForgotPassword = () => {
+    triggerHaptic();
+    showCrossPlatformAlert(
+      'Password Assistance',
+      'For local workspace or team accounts, contact your server admin or review your endpoints in Server Settings.'
+    );
   };
 
   return (
@@ -128,6 +137,12 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               leftIcon={<Lock size={18} color="#64748B" />}
             />
+
+            <View style={styles.passwordExtrasRow}>
+              <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
+                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              </TouchableOpacity>
+            </View>
 
             <Button
               testID="sign-in-btn"
@@ -260,8 +275,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+  passwordExtrasRow: {
+    alignItems: 'flex-end',
+    marginTop: -8,
+    marginBottom: 12,
+  },
+  forgotPasswordText: {
+    fontSize: 12,
+    color: '#818CF8',
+    fontWeight: '500',
+  },
   loginBtn: {
-    marginTop: 8,
+    marginTop: 4,
   },
   demoBtn: {
     marginTop: 12,

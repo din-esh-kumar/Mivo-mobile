@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  TextInput,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,6 +15,7 @@ import { THEME } from '../../src/constants/theme';
 import { useCommunityStore } from '../../src/stores/useCommunityStore';
 import { useRoomStore } from '../../src/stores/useRoomStore';
 import { ChannelDTO } from '../../src/types';
+import { Avatar } from '../../src/components/Avatar';
 import {
   Hash,
   Volume2,
@@ -22,10 +24,11 @@ import {
   ChevronRight,
   Compass,
   Users,
-  Sparkles,
+  Search,
+  X,
   Zap,
 } from 'lucide-react-native';
-import { triggerHaptic } from '../../src/utils/haptics';
+import { triggerHaptic, triggerSelectionHaptic } from '../../src/utils/haptics';
 
 export default function ChannelsScreen() {
   const router = useRouter();
@@ -41,6 +44,7 @@ export default function ChannelsScreen() {
   const joinRoom = useRoomStore((s) => s.joinRoom);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [channelSearch, setChannelSearch] = useState('');
 
   useEffect(() => {
     loadUserCommunities();
@@ -91,7 +95,7 @@ export default function ChannelsScreen() {
           { id: 'comm-3', name: 'Growth & Ops', slug: 'growth', ownerId: '1', createdAt: '' },
         ];
 
-  const displayTextChannels = hasLoadedChannels
+  const rawTextChannels = hasLoadedChannels
     ? textChannels
     : [
         { id: 'chan-gen', communityId: 'comm-1', name: 'general', type: 'TEXT' as const, position: 0, createdAt: '' },
@@ -99,18 +103,31 @@ export default function ChannelsScreen() {
         { id: 'chan-ann', communityId: 'comm-1', name: 'announcements', type: 'ANNOUNCEMENT' as const, position: 2, createdAt: '' },
       ];
 
-  const displayVoiceChannels = hasLoadedChannels
+  const rawVoiceChannels = hasLoadedChannels
     ? voiceChannels
     : [
         { id: 'chan-voice-1', communityId: 'comm-1', name: 'Daily Standup Huddle', type: 'VOICE' as const, position: 3, createdAt: '' },
         { id: 'chan-voice-2', communityId: 'comm-1', name: 'Watercooler Voice', type: 'VOICE' as const, position: 4, createdAt: '' },
       ];
 
-  const displayStageChannels = hasLoadedChannels
+  const rawStageChannels = hasLoadedChannels
     ? stageChannels
     : [
         { id: 'chan-stage-1', communityId: 'comm-1', name: 'All-Hands Townhall', type: 'STAGE' as const, position: 5, createdAt: '' },
       ];
+
+  // Filter channels based on quick search if entered
+  const displayTextChannels = channelSearch
+    ? rawTextChannels.filter((c) => c.name.toLowerCase().includes(channelSearch.toLowerCase()))
+    : rawTextChannels;
+
+  const displayVoiceChannels = channelSearch
+    ? rawVoiceChannels.filter((c) => c.name.toLowerCase().includes(channelSearch.toLowerCase()))
+    : rawVoiceChannels;
+
+  const displayStageChannels = channelSearch
+    ? rawStageChannels.filter((c) => c.name.toLowerCase().includes(channelSearch.toLowerCase()))
+    : rawStageChannels;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -171,6 +188,25 @@ export default function ChannelsScreen() {
             );
           })}
         </ScrollView>
+      </View>
+
+      {/* Channel Search Filter Input */}
+      <View style={styles.searchWrapper}>
+        <View style={styles.searchContainer}>
+          <Search size={15} color="#64748B" style={styles.searchIcon} />
+          <TextInput
+            placeholder="Search channels..."
+            placeholderTextColor="#64748B"
+            value={channelSearch}
+            onChangeText={setChannelSearch}
+            style={styles.searchInput}
+          />
+          {channelSearch.length > 0 && (
+            <TouchableOpacity onPress={() => setChannelSearch('')}>
+              <X size={14} color="#94A3B8" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Channels List */}
@@ -241,8 +277,17 @@ export default function ChannelsScreen() {
                     <Text style={styles.voiceSub}>Tap to jump in voice room</Text>
                   </View>
                 </View>
-                <View style={styles.joinTag}>
-                  <Text style={styles.joinTagText}>JOIN</Text>
+
+                <View style={styles.voiceRightArea}>
+                  {/* Active Speaker Avatars Preview */}
+                  <View style={styles.voiceAvatarsRow}>
+                    <Avatar name="Sarah" size={20} />
+                    <Avatar name="Elena" size={20} />
+                  </View>
+
+                  <View style={styles.joinTag}>
+                    <Text style={styles.joinTagText}>JOIN</Text>
+                  </View>
                 </View>
               </TouchableOpacity>
             ))}
@@ -387,6 +432,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
   },
+  searchWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#101625',
+    borderWidth: 1,
+    borderColor: '#1D273B',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    height: 38,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#F8FAFC',
+    fontSize: 13.5,
+    height: '100%',
+  },
   scrollList: {
     padding: 16,
     paddingBottom: 40,
@@ -509,6 +578,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(6, 182, 212, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  voiceRightArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  voiceAvatarsRow: {
+    flexDirection: 'row',
+    gap: -6,
   },
   joinTag: {
     backgroundColor: 'rgba(16, 185, 129, 0.16)',

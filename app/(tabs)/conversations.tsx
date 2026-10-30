@@ -9,6 +9,7 @@ import {
   TextInput,
   ScrollView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,9 +18,16 @@ import { useConversationStore } from '../../src/stores/useConversationStore';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { ConversationDTO, UserSummaryDTO } from '../../src/types';
 import { Avatar } from '../../src/components/Avatar';
-import { Search, Plus, MessageSquare, X, CheckCheck } from 'lucide-react-native';
-import { showCrossPlatformPrompt } from '../../src/utils/dialog';
-import { triggerHaptic } from '../../src/utils/haptics';
+import { Search, Plus, MessageSquare, X, CheckCheck, UserCheck, Sparkles } from 'lucide-react-native';
+import { triggerHaptic, triggerSelectionHaptic } from '../../src/utils/haptics';
+
+const TEAM_CONTACTS = [
+  { name: 'Elena Rostova', username: 'elena_ai', role: 'Lead AI Engineer', status: 'ONLINE' as const },
+  { name: 'Sarah Jenkins', username: 'sarah_pm', role: 'Product Lead', status: 'ONLINE' as const },
+  { name: 'Marcus Vance', username: 'marcus_eng', role: 'Audio Mesh Specialist', status: 'IDLE' as const },
+  { name: 'David Kim', username: 'david_fe', role: 'Mobile Architect', status: 'ONLINE' as const },
+  { name: 'Maya Patel', username: 'maya_ops', role: 'Infrastructure', status: 'OFFLINE' as const },
+];
 
 export default function ConversationsScreen() {
   const router = useRouter();
@@ -30,6 +38,8 @@ export default function ConversationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isClient, setIsClient] = useState(Platform.OS !== 'web');
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [newChatInput, setNewChatInput] = useState('');
 
   useEffect(() => {
     setIsClient(true);
@@ -89,88 +99,46 @@ export default function ConversationsScreen() {
     });
   };
 
-  const handleNewChat = () => {
+  const handleStartDmWith = async (name: string, username?: string) => {
     triggerHaptic();
-    showCrossPlatformPrompt(
-      'Start Direct Message',
-      'Enter username or user ID to chat with (or select a recommended team contact):',
-      async (text) => {
-        if (!text?.trim()) return;
-        const res = await createDirectConversation(text.trim());
-        if (res.success && res.data) {
-          handleOpenConversation(res.data);
-        } else {
-          // If server fails or offline, create a local direct conversation
-          const localDm: ConversationDTO = {
-            id: 'dm-' + text.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now().toString(36),
-            type: 'DIRECT',
-            participants: [
-              {
-                id: 'p-' + text.toLowerCase(),
-                userId: 'user-' + text.toLowerCase(),
-                user: {
-                  id: 'user-' + text.toLowerCase(),
-                  username: text.toLowerCase().replace(/\s+/g, '_'),
-                  displayName: text,
-                  status: 'ONLINE',
-                },
-                joinedAt: new Date().toISOString(),
-              },
-            ],
-            lastMessage: {
-              id: 'm-init-' + Date.now(),
-              authorId: 'user-' + text.toLowerCase(),
-              author: { id: 'user-' + text.toLowerCase(), username: text.toLowerCase(), displayName: text },
-              content: 'Direct message channel initiated.',
-              createdAt: new Date().toISOString(),
+    setShowNewChatModal(false);
+    setNewChatInput('');
+
+    const res = await createDirectConversation(username || name.trim());
+    if (res.success && res.data) {
+      handleOpenConversation(res.data);
+    } else {
+      const localDm: ConversationDTO = {
+        id: 'dm-' + name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now().toString(36),
+        type: 'DIRECT',
+        participants: [
+          {
+            id: 'p-' + name.toLowerCase(),
+            userId: 'user-' + name.toLowerCase(),
+            user: {
+              id: 'user-' + name.toLowerCase(),
+              username: (username || name).toLowerCase().replace(/\s+/g, '_'),
+              displayName: name,
+              status: 'ONLINE',
             },
-            unreadCount: 0,
-            createdAt: new Date().toISOString(),
-          };
-          useConversationStore.setState((state) => ({
-            conversations: [localDm, ...state.conversations.filter((c) => c.id !== localDm.id)],
-          }));
-          handleOpenConversation(localDm);
-        }
-      },
-      [
-        {
-          text: 'Elena Rostova (Lead AI)',
-          onPress: async () => {
-            const sampleDm: ConversationDTO = {
-              id: 'dm-elena-' + Date.now().toString(36),
-              type: 'DIRECT',
-              participants: [
-                {
-                  id: 'p-elena',
-                  userId: 'user-elena',
-                  user: {
-                    id: 'user-elena',
-                    username: 'elena_ai',
-                    displayName: 'Elena Rostova',
-                    status: 'ONLINE',
-                  },
-                  joinedAt: new Date().toISOString(),
-                },
-              ],
-              lastMessage: {
-                id: 'm-elena-1',
-                authorId: 'user-elena',
-                author: { id: 'user-elena', username: 'elena_ai', displayName: 'Elena Rostova' },
-                content: 'Hi! Let me know if you need to test the real-time audio stage.',
-                createdAt: new Date().toISOString(),
-              },
-              unreadCount: 1,
-              createdAt: new Date().toISOString(),
-            };
-            useConversationStore.setState((state) => ({
-              conversations: [sampleDm, ...state.conversations.filter((c) => c.id !== sampleDm.id)],
-            }));
-            handleOpenConversation(sampleDm);
+            joinedAt: new Date().toISOString(),
           },
+        ],
+        lastMessage: {
+          id: 'm-init-' + Date.now(),
+          authorId: 'user-' + name.toLowerCase(),
+          author: { id: 'user-' + name.toLowerCase(), username: name.toLowerCase(), displayName: name },
+          content: 'Direct message channel initiated.',
+          createdAt: new Date().toISOString(),
         },
-      ]
-    );
+        unreadCount: 0,
+        createdAt: new Date().toISOString(),
+      };
+      useConversationStore.setState((state) => ({
+        conversations: [localDm, ...state.conversations.filter((c) => c.id !== localDm.id)],
+      }));
+      handleOpenConversation(localDm);
+    }
   };
 
   const filteredConversations = conversations.filter((c) => {
@@ -199,7 +167,10 @@ export default function ConversationsScreen() {
         <TouchableOpacity
           testID="new-chat-btn"
           style={styles.newChatBtn}
-          onPress={handleNewChat}
+          onPress={() => {
+            triggerHaptic();
+            setShowNewChatModal(true);
+          }}
           activeOpacity={0.8}
         >
           <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
@@ -343,6 +314,76 @@ export default function ConversationsScreen() {
           );
         }}
       />
+
+      {/* New Direct Message Bottom Sheet Modal */}
+      <Modal
+        visible={showNewChatModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowNewChatModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowNewChatModal(false)}
+        >
+          <View style={styles.newChatSheet}>
+            <View style={styles.sheetHandle} />
+
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>New Direct Message</Text>
+              <TouchableOpacity onPress={() => setShowNewChatModal(false)}>
+                <X size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Custom Input */}
+            <View style={styles.modalInputRow}>
+              <TextInput
+                placeholder="Enter username or name..."
+                placeholderTextColor="#64748B"
+                value={newChatInput}
+                onChangeText={setNewChatInput}
+                style={styles.modalTextInput}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.modalStartBtn,
+                  newChatInput.trim().length > 0 && styles.modalStartBtnActive,
+                ]}
+                onPress={() => {
+                  if (newChatInput.trim()) {
+                    handleStartDmWith(newChatInput.trim());
+                  }
+                }}
+                disabled={!newChatInput.trim()}
+              >
+                <Text style={styles.modalStartBtnText}>Chat</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Suggested Team Members */}
+            <Text style={styles.modalSectionTitle}>SUGGESTED TEAMMATES</Text>
+            <ScrollView style={styles.suggestedList} showsVerticalScrollIndicator={false}>
+              {TEAM_CONTACTS.map((contact) => (
+                <TouchableOpacity
+                  key={contact.username}
+                  style={styles.suggestedContactRow}
+                  activeOpacity={0.75}
+                  onPress={() => handleStartDmWith(contact.name, contact.username)}
+                >
+                  <Avatar name={contact.name} size={40} status={contact.status} showStatus />
+                  <View style={styles.contactInfo}>
+                    <Text style={styles.contactName}>{contact.name}</Text>
+                    <Text style={styles.contactRole}>{contact.role} • @{contact.username}</Text>
+                  </View>
+                  <Plus size={16} color={THEME.colors.primaryLight} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -544,5 +585,100 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 6,
     textAlign: 'center',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  newChatSheet: {
+    backgroundColor: '#101726',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '75%',
+    borderTopWidth: 1,
+    borderColor: '#232F45',
+  },
+  sheetHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#334155',
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  modalInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#131C2E',
+    borderWidth: 1,
+    borderColor: '#222F45',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  modalTextInput: {
+    flex: 1,
+    color: '#F8FAFC',
+    fontSize: 14,
+    height: 44,
+  },
+  modalStartBtn: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  modalStartBtnActive: {
+    backgroundColor: THEME.colors.primary,
+  },
+  modalStartBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  modalSectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.8,
+    marginBottom: 10,
+  },
+  suggestedList: {
+    maxHeight: 240,
+  },
+  suggestedContactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A2438',
+  },
+  contactInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  contactName: {
+    fontSize: 14.5,
+    fontWeight: '600',
+    color: '#F8FAFC',
+  },
+  contactRole: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+    marginTop: 2,
   },
 });

@@ -15,8 +15,11 @@ export default function RootLayout() {
   const setupRoomSockets = useRoomStore((s) => s.setupSocketListeners);
 
   useEffect(() => {
-    loadConfig();
-    initializeAuth();
+    const initApp = async () => {
+      await loadConfig();
+      await initializeAuth();
+    };
+    initApp();
   }, []);
 
   useEffect(() => {
@@ -30,7 +33,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" backgroundColor={THEME.colors.background} />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerShown: false,

@@ -6,8 +6,10 @@ import {
   StyleSheet,
   ViewStyle,
   TextStyle,
+  View,
 } from 'react-native';
 import { THEME } from '../constants/theme';
+import { triggerHaptic } from '../utils/haptics';
 
 interface ButtonProps {
   title: string;
@@ -19,6 +21,7 @@ interface ButtonProps {
   icon?: React.ReactNode;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  testID?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -31,7 +34,14 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   style,
   textStyle,
+  testID,
 }) => {
+  const handlePress = () => {
+    if (disabled || isLoading) return;
+    triggerHaptic();
+    onPress();
+  };
+
   const getContainerStyle = () => {
     switch (variant) {
       case 'primary':
@@ -74,8 +84,9 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
+      testID={testID}
+      activeOpacity={0.82}
+      onPress={handlePress}
       disabled={disabled || isLoading}
       style={[
         styles.baseBtn,
@@ -88,10 +99,10 @@ export const Button: React.FC<ButtonProps> = ({
       {isLoading ? (
         <ActivityIndicator size="small" color="#FFFFFF" />
       ) : (
-        <>
-          {icon}
+        <View style={styles.contentRow}>
+          {icon && <View style={styles.iconWrapper}>{icon}</View>}
           <Text style={[styles.baseText, getTextStyle(), textStyle]}>{title}</Text>
-        </>
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -99,34 +110,37 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   baseBtn: {
+    borderRadius: THEME.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: THEME.borderRadius.md,
-    gap: 8,
   },
-  smBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  iconWrapper: {
+    marginRight: 8,
   },
-  mdBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-  },
-  lgBtn: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+  baseText: {
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   primaryBtn: {
     backgroundColor: THEME.colors.primary,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     shadowColor: THEME.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 3,
   },
   secondaryBtn: {
-    backgroundColor: THEME.colors.surfaceHover,
+    backgroundColor: THEME.colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: THEME.colors.borderLight,
   },
   outlineBtn: {
     backgroundColor: 'transparent',
@@ -135,28 +149,47 @@ const styles = StyleSheet.create({
   },
   dangerBtn: {
     backgroundColor: THEME.colors.accentRed,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: THEME.colors.accentRed,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
   ghostBtn: {
     backgroundColor: 'transparent',
   },
-  disabledBtn: {
-    opacity: 0.5,
+  smBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 12,
   },
-  baseText: {
-    fontWeight: '600',
-    fontSize: 15,
+  mdBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  lgBtn: {
+    paddingVertical: 15,
+    paddingHorizontal: 22,
+    borderRadius: THEME.borderRadius.lg,
   },
   lightText: {
     color: '#FFFFFF',
+    fontSize: 15,
   },
   secondaryText: {
     color: THEME.colors.textPrimary,
+    fontSize: 15,
   },
   outlineText: {
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.textSecondary,
+    fontSize: 15,
   },
   ghostText: {
     color: THEME.colors.textSecondary,
+    fontSize: 14,
+  },
+  disabledBtn: {
+    opacity: 0.45,
   },
 });
-

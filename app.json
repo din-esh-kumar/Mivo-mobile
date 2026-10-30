@@ -7,7 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "mivo",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "splash": {
       "backgroundColor": "#090D16",
       "resizeMode": "contain"

@@ -1,0 +1,44 @@
+appId: com.wysbryx.mivo
+---
+# ==========================================
+# Maestro Flow 04: Direct Messaging & Real-Time Sync
+# ==========================================
+
+- launchApp:
+    clearState: false
+
+# 1. Switch to Messages Tab
+- tapOn: "Messages"
+- assertVisible: "Direct Messages"
+
+# 2. Test Search Filtering
+- tapOn:
+    id: "search-conversations-input"
+- inputText: "Sarah"
+- assertVisible: "Sarah Jenkins"
+- eraseText: 5
+
+# 3. Open Sarah Jenkins DM
+- tapOn: "Sarah Jenkins"
+- assertVisible: "Direct Conversation"
+
+# 4. Send Message in Direct Chat
+- tapOn:
+    id: "chat-text-input"
+- inputText: "WebRTC audio test message from mobile automated suite"
+- tapOn:
+    id: "chat-send-btn"
+- assertVisible: "WebRTC audio test message from mobile automated suite"
+
+# 5. Jump into Direct Audio Huddle
+- tapOn:
+    id: "chat-huddle-btn"
+- assertVisible: "LIVE"
+- tapOn:
+    id: "leave-room-btn"
+
+# 6. Back to Messages Screen
+- tapOn:
+    id: "chat-back-btn"
+- assertVisible: "Direct Messages"
+

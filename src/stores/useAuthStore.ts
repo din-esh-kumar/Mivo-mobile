@@ -12,6 +12,7 @@ interface AuthState {
   isInitialized: boolean;
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   register: (payload: { email: string; username: string; displayName: string; password: string }) => Promise<{ success: boolean; error?: string }>;
+  loginAsGuest: (displayName?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
   updateStatus: (status: 'ONLINE' | 'IDLE' | 'DND' | 'OFFLINE', customStatus?: string) => Promise<void>;
@@ -33,14 +34,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const user = JSON.parse(userJson);
         set({ user, token, isInitialized: true });
         socketClient.connect(token);
-        
+
         // Refresh profile in background
-        authApi.getCurrentUser().then((res) => {
+        authApi.getCurrentUser().then(async (res) => {
           if (res.success && res.data) {
             set({ user: res.data });
-            AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(res.data));
+            await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(res.data));
+          } else if (
+            res.error?.code === 'UNAUTHORIZED' ||
+            (res.error?.code === 'HTTP_ERROR' && res.error?.message?.includes('401'))
+          ) {
+            // Token expired or invalid on backend
+            await get().logout();
           }
-        });
+        }).catch(() => {});
       } else {
         set({ isInitialized: true });
       }
@@ -54,12 +61,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await authApi.login(email, password);
       if (res.success && res.data) {
-        const { user, tokens } = res.data;
-        api.setAccessToken(tokens.accessToken);
+        const token = res.data.accessToken || res.data.tokens?.accessToken;
+        const user = res.data.user;
+        if (!token) {
+          set({ isLoading: false });
+          return { success: false, error: 'No access token received from server' };
+        }
+        api.setAccessToken(token);
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
         
-        set({ user, token: tokens.accessToken, isLoading: false });
-        socketClient.connect(tokens.accessToken);
+        set({ user, token, isLoading: false });
+        socketClient.connect(token);
         return { success: true };
       }
       set({ isLoading: false });
@@ -75,12 +87,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await authApi.register(payload);
       if (res.success && res.data) {
-        const { user, tokens } = res.data;
-        api.setAccessToken(tokens.accessToken);
+        const token = res.data.accessToken || res.data.tokens?.accessToken;
+        const user = res.data.user;
+        if (!token) {
+          set({ isLoading: false });
+          return { success: false, error: 'No access token received from server' };
+        }
+        api.setAccessToken(token);
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
-        set({ user, token: tokens.accessToken, isLoading: false });
-        socketClient.connect(tokens.accessToken);
+        set({ user, token, isLoading: false });
+        socketClient.connect(token);
         return { success: true };
       }
       set({ isLoading: false });
@@ -88,6 +105,62 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err: any) {
       set({ isLoading: false });
       return { success: false, error: err.message || 'Registration failed' };
+    }
+  },
+
+  loginAsGuest: async (displayName?: string) => {
+    set({ isLoading: true });
+    try {
+      const name = displayName?.trim() || 'Demo User';
+      const res = await authApi.guestLogin(name);
+      if (res.success && res.data) {
+        const token = res.data.accessToken || res.data.tokens?.accessToken;
+        const user = res.data.user;
+        if (!token) {
+          set({ isLoading: false });
+          return { success: false, error: 'No access token received from server' };
+        }
+        api.setAccessToken(token);
+        await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+
+        set({ user, token, isLoading: false });
+        socketClient.connect(token);
+        return { success: true };
+      }
+
+      // If backend responded with error or server is unreachable, fall back to offline demo session
+      const offlineGuest: UserProfileDTO = {
+        id: 'guest-' + Math.random().toString(36).substring(2, 9),
+        username: name.toLowerCase().replace(/\s+/g, '_'),
+        displayName: name,
+        email: `${name.toLowerCase().replace(/\s+/g, '')}@mivo.local`,
+        status: 'ONLINE',
+        createdAt: new Date().toISOString(),
+      };
+      const offlineToken = 'mivo-demo-guest-token';
+      api.setAccessToken(offlineToken);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(offlineGuest));
+
+      set({ user: offlineGuest, token: offlineToken, isLoading: false });
+      socketClient.connect(offlineToken);
+      return { success: true };
+    } catch {
+      const name = displayName?.trim() || 'Demo User';
+      const offlineGuest: UserProfileDTO = {
+        id: 'guest-' + Math.random().toString(36).substring(2, 9),
+        username: 'demo_user',
+        displayName: name,
+        email: 'demo@mivo.local',
+        status: 'ONLINE',
+        createdAt: new Date().toISOString(),
+      };
+      const offlineToken = 'mivo-demo-guest-token';
+      api.setAccessToken(offlineToken);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(offlineGuest));
+
+      set({ user: offlineGuest, token: offlineToken, isLoading: false });
+      socketClient.connect(offlineToken);
+      return { success: true };
     }
   },
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api, STORAGE_KEYS } from '../api/api-client';
+import { api, STORAGE_KEYS, normalizeUrl } from '../api/api-client';
 import { socketClient } from '../socket/socket-client';
 
 interface ConfigState {
@@ -12,8 +12,8 @@ interface ConfigState {
   resetToDefaults: () => Promise<void>;
 }
 
-const DEFAULT_API = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
-const DEFAULT_WS = process.env.EXPO_PUBLIC_WS_URL || 'http://localhost:4000';
+const DEFAULT_API = normalizeUrl(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1');
+const DEFAULT_WS = normalizeUrl(process.env.EXPO_PUBLIC_WS_URL || 'http://localhost:4000');
 
 export const useConfigStore = create<ConfigState>((set) => ({
   apiUrl: DEFAULT_API,
@@ -27,8 +27,8 @@ export const useConfigStore = create<ConfigState>((set) => ({
         AsyncStorage.getItem(STORAGE_KEYS.WS_URL),
       ]);
 
-      const apiUrl = savedApi || DEFAULT_API;
-      const wsUrl = savedWs || DEFAULT_WS;
+      const apiUrl = savedApi ? normalizeUrl(savedApi) : DEFAULT_API;
+      const wsUrl = savedWs ? normalizeUrl(savedWs) : DEFAULT_WS;
 
       api.setBaseUrl(apiUrl);
       await socketClient.setWsUrl(wsUrl);
@@ -40,8 +40,8 @@ export const useConfigStore = create<ConfigState>((set) => ({
   },
 
   updateEndpoints: async (apiUrl: string, wsUrl: string) => {
-    const cleanApi = apiUrl.trim().replace(/\/+$/, '');
-    const cleanWs = wsUrl.trim().replace(/\/+$/, '');
+    const cleanApi = normalizeUrl(apiUrl);
+    const cleanWs = normalizeUrl(wsUrl);
 
     api.setBaseUrl(cleanApi);
     await socketClient.setWsUrl(cleanWs);

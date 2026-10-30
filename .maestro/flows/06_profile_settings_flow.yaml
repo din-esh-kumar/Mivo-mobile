@@ -1,0 +1,40 @@
+appId: com.wysbryx.mivo
+---
+# ==========================================
+# Maestro Flow 06: Profile Presence, Settings & Logout
+# ==========================================
+
+- launchApp:
+    clearState: false
+
+# 1. Switch to Profile Tab
+- tapOn: "Profile"
+- assertVisible: "SET STATUS"
+- assertVisible: "PREFERENCES"
+- assertVisible: "DEVELOPER & NETWORK"
+
+# 2. Change Presence Status
+- tapOn:
+    id: "status-IDLE"
+- tapOn:
+    id: "status-DND"
+- tapOn:
+    id: "status-ONLINE"
+
+# 3. Open Developer Server Settings from Profile
+- tapOn:
+    id: "profile-server-settings-btn"
+- assertVisible: "Server Endpoints"
+- tapOn:
+    id: "server-back-btn"
+
+# 4. Sign Out
+- tapOn:
+    id: "logout-btn"
+- assertVisible: "Sign Out"
+- tapOn: "Sign Out"
+
+# 5. Verify Return to Login Screen
+- assertVisible: "Welcome to Mivo"
+- assertVisible: "Sign In"
+

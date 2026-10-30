@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { THEME } from '../constants/theme';
 import { Eye, EyeOff } from 'lucide-react-native';
+import { triggerHaptic } from '../utils/haptics';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -23,10 +24,16 @@ export const Input: React.FC<InputProps> = ({
   leftIcon,
   isPassword = false,
   style,
+  testID,
   ...rest
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(!isPassword);
+
+  const togglePasswordVisibility = () => {
+    triggerHaptic();
+    setShowPassword((prev) => !prev);
+  };
 
   return (
     <View style={styles.container}>
@@ -41,6 +48,7 @@ export const Input: React.FC<InputProps> = ({
         {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
 
         <TextInput
+          testID={testID}
           placeholderTextColor={THEME.colors.textMuted}
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setIsFocused(true)}
@@ -52,7 +60,8 @@ export const Input: React.FC<InputProps> = ({
         {isPassword && (
           <TouchableOpacity
             style={styles.eyeBtn}
-            onPress={() => setShowPassword(!showPassword)}
+            onPress={togglePasswordVisibility}
+            activeOpacity={0.7}
           >
             {showPassword ? (
               <EyeOff size={18} color={THEME.colors.textSecondary} />
@@ -75,29 +84,36 @@ const styles = StyleSheet.create({
   label: {
     ...THEME.typography.caption,
     color: THEME.colors.textSecondary,
-    marginBottom: 6,
+    marginBottom: 7,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
+    fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: '#0F1626',
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: '#232F45',
     borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: 12,
-    height: 48,
+    paddingHorizontal: 14,
+    height: 50,
   },
   inputFocused: {
     borderColor: THEME.colors.primary,
-    backgroundColor: '#131B2E',
+    backgroundColor: '#131C30',
+    shadowColor: THEME.colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   inputError: {
     borderColor: THEME.colors.accentRed,
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
   },
   iconContainer: {
-    marginRight: 8,
+    marginRight: 10,
   },
   input: {
     flex: 1,
@@ -107,11 +123,12 @@ const styles = StyleSheet.create({
   },
   eyeBtn: {
     padding: 6,
+    marginLeft: 6,
   },
   errorText: {
+    ...THEME.typography.caption,
     color: THEME.colors.accentRed,
-    fontSize: 12,
-    marginTop: 4,
+    marginTop: 5,
+    marginLeft: 2,
   },
 });
-

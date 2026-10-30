@@ -12,8 +12,8 @@
 
 **Next-Generation Unified Real-Time Communication & Stage Platform for iOS & Android**
 
-[![React Native](https://img.shields.io/badge/React%20Native-0.76-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactnative.dev/)
-[![Expo](https://img.shields.io/badge/Expo-SDK%2052-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React%20Native-0.88-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactnative.dev/)
+[![Expo](https://img.shields.io/badge/Expo-SDK%2058-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.8-010101?style=for-the-badge&logo=socketdotio&logoColor=white)](https://socket.io/)
 [![Zustand](https://img.shields.io/badge/Zustand-5.0-764ABC?style=for-the-badge)](https://zustand.docs.pmnd.rs/)
@@ -26,7 +26,7 @@
 
 **Mivo Mobile** brings Mivo's signature **Unified Communication Stage** directly to mobile devices. It allows users to fluidly morph between text discussions, audio huddles, and video stages without leaving the conversation room or dropping WebRTC connections.
 
-Built on **Expo SDK 52** and **Expo Router**, this repository is a standalone mobile app configured with dedicated API and Socket.io clients tailored for the Mivo backend.
+Built on **Expo SDK 58** and **Expo Router**, this repository is a standalone mobile app configured with dedicated API and Socket.io clients tailored for the Mivo backend.
 
 ---
 
@@ -107,7 +107,7 @@ Mivo-mobile/
 ### Prerequisites
 
 * **Node.js**: v18.0.0 or later (v20+ recommended)
-* **pnpm** or **npm**
+* **pnpm**: v9.0.0 or later (v10+ recommended)
 * **Expo Go** app on your iOS or Android phone (available in App Store / Google Play)
 
 ### 1. Installation
@@ -119,8 +119,6 @@ cd Mivo-mobile
 
 # Install dependencies
 pnpm install
-# or
-npm install
 ```
 
 ### 2. Configure Backend Endpoints
@@ -141,7 +139,9 @@ Set the API & Socket.io server endpoints:
 ### 3. Start Development Server
 
 ```bash
-npx expo start
+pnpm start
+# or
+pnpm dev
 ```
 
 * Press `a` to run on an attached **Android device / emulator**.
@@ -156,20 +156,17 @@ npx expo start
 To build standalone APKs or iOS bundles using Expo Application Services (EAS):
 
 ```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
+# EAS CLI via pnpm dlx or global install
+pnpm dlx eas-cli login
 
 # Configure EAS Build
-eas build:configure
+pnpm dlx eas-cli build:configure
 
 # Build Android APK
-eas build -p android --profile preview
+pnpm dlx eas-cli build -p android --profile preview
 
 # Build iOS App
-eas build -p ios --profile preview
+pnpm dlx eas-cli build -p ios --profile preview
 ```
 
 ---

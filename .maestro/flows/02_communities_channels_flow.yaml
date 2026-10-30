@@ -1,0 +1,43 @@
+appId: com.wysbryx.mivo
+---
+# ==========================================
+# Maestro Flow 02: Communities & Channels Navigation
+# ==========================================
+
+- launchApp:
+    clearState: false
+
+# 1. Verify Community Carousel
+- assertVisible: "Engineering Core"
+- assertVisible: "Product & Design"
+
+# 2. Switch Community
+- tapOn:
+    id: "community-pill-comm-2"
+- assertVisible: "general-design"
+- tapOn:
+    id: "community-pill-comm-1"
+- assertVisible: "TEXT CHANNELS"
+- assertVisible: "general"
+- assertVisible: "dev-chat"
+- assertVisible: "announcements"
+
+# 3. Open Channel Chat
+- tapOn:
+    id: "channel-row-chan-gen"
+- assertVisible: "#general"
+- assertVisible: "Unified Stage Channel"
+
+# 4. Send Channel Message
+- tapOn:
+    id: "chat-text-input"
+- inputText: "Maestro automated channel message verification"
+- tapOn:
+    id: "chat-send-btn"
+- assertVisible: "Maestro automated channel message verification"
+
+# 5. Return to Channels List
+- tapOn:
+    id: "chat-back-btn"
+- assertVisible: "TEXT CHANNELS"
+

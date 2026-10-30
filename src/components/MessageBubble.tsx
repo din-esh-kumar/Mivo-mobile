@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { THEME } from '../constants/theme';
 import { ChatMessageDTO } from '../types';
 import { Avatar } from './Avatar';
+import { CheckCheck } from 'lucide-react-native';
+import { triggerHaptic } from '../utils/haptics';
 
 interface MessageBubbleProps {
   message: ChatMessageDTO;
@@ -15,10 +17,35 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isCurrentUser,
   onReply,
 }) => {
-  const formattedTime = new Date(message.createdAt).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const [isClient, setIsClient] = useState(Platform.OS !== 'web');
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const formatTime = (iso?: string) => {
+    if (!iso || !isClient) return '';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      const h = d.getHours().toString().padStart(2, '0');
+      const m = d.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    } catch {
+      return '';
+    }
+  };
+
+  const handleLongPress = () => {
+    if (onReply) {
+      triggerHaptic();
+      onReply(message);
+    }
+  };
+
+  const formattedTime = formatTime(message.createdAt);
+  const authorName = message.author?.displayName || 'User';
+  const avatarUrl = message.author?.avatarUrl;
 
   return (
     <View
@@ -29,8 +56,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     >
       {!isCurrentUser && (
         <Avatar
-          url={message.author.avatarUrl}
-          name={message.author.displayName}
+          url={avatarUrl}
+          name={authorName}
           size={32}
         />
       )}
@@ -38,27 +65,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <View style={[styles.bubbleContainer, isCurrentUser && styles.alignRight]}>
         {!isCurrentUser && (
           <View style={styles.authorRow}>
-            <Text style={styles.authorName}>{message.author.displayName}</Text>
-            <Text style={styles.timeText}>{formattedTime}</Text>
+            <Text style={styles.authorName}>{authorName}</Text>
+            {formattedTime ? <Text style={styles.timeText}>{formattedTime}</Text> : null}
           </View>
         )}
 
         {/* Reply Quote Banner */}
         {message.replyTo && (
           <View style={styles.replyQuote}>
-            <Text style={styles.replyAuthor}>
-              Replying to {message.replyTo.author?.displayName}:
-            </Text>
-            <Text style={styles.replyContent} numberOfLines={1}>
-              {message.replyTo.content}
-            </Text>
+            <View style={styles.replyBar} />
+            <View style={styles.replyBody}>
+              <Text style={styles.replyAuthor}>
+                Replying to {message.replyTo.author?.displayName || 'User'}:
+              </Text>
+              <Text style={styles.replyContent} numberOfLines={1}>
+                {message.replyTo.content}
+              </Text>
+            </View>
           </View>
         )}
 
         {/* Bubble */}
         <TouchableOpacity
-          activeOpacity={0.9}
-          onLongPress={() => onReply && onReply(message)}
+          activeOpacity={0.88}
+          onLongPress={handleLongPress}
           style={[
             styles.bubble,
             isCurrentUser ? styles.bubbleMe : styles.bubbleOther,
@@ -73,18 +103,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             {message.content}
           </Text>
 
-          {isCurrentUser && (
-            <Text style={styles.timeMeText}>{formattedTime}</Text>
-          )}
+          {isCurrentUser && formattedTime ? (
+            <View style={styles.meStatusRow}>
+              <Text style={styles.timeMeText}>{formattedTime}</Text>
+              <CheckCheck size={12} color="rgba(255, 255, 255, 0.7)" style={styles.checkIcon} />
+            </View>
+          ) : null}
         </TouchableOpacity>
 
         {/* Reactions */}
         {message.reactions && Object.keys(message.reactions).length > 0 && (
-          <View style={styles.reactionsRow}>
-            {Object.entries(message.reactions).map(([emoji, users]) => (
+          <View style={[styles.reactionsRow, isCurrentUser && styles.reactionsRowMe]}>
+            {Object.entries(message.reactions).map(([emoji, userIds]) => (
               <View key={emoji} style={styles.reactionPill}>
                 <Text style={styles.reactionEmoji}>{emoji}</Text>
-                <Text style={styles.reactionCount}>{users.length}</Text>
+                <Text style={styles.reactionCount}>{userIds.length}</Text>
               </View>
             ))}
           </View>
@@ -99,19 +132,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginVertical: 4,
     paddingHorizontal: 12,
+    alignItems: 'flex-end',
     gap: 8,
-    maxWidth: '88%',
   },
   wrapperMe: {
-    alignSelf: 'flex-end',
     justifyContent: 'flex-end',
   },
   wrapperOther: {
-    alignSelf: 'flex-start',
     justifyContent: 'flex-start',
   },
   bubbleContainer: {
-    flexShrink: 1,
+    maxWidth: '78%',
+    alignItems: 'flex-start',
   },
   alignRight: {
     alignItems: 'flex-end',
@@ -119,63 +151,95 @@ const styles = StyleSheet.create({
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
+    gap: 8,
+    marginBottom: 4,
     marginLeft: 4,
   },
   authorName: {
-    color: THEME.colors.textSecondary,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#CBD5E1',
+    letterSpacing: -0.2,
   },
   timeText: {
+    fontSize: 10.5,
     color: THEME.colors.textMuted,
-    fontSize: 10,
   },
   replyQuote: {
-    borderLeftWidth: 2,
-    borderLeftColor: THEME.colors.primary,
-    paddingLeft: 6,
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
+    padding: 6,
     marginBottom: 4,
-    opacity: 0.8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.07)',
+  },
+  replyBar: {
+    width: 3,
+    backgroundColor: THEME.colors.primary,
+    borderRadius: 2,
+    marginRight: 6,
+  },
+  replyBody: {
+    flex: 1,
   },
   replyAuthor: {
-    color: THEME.colors.primary,
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: THEME.colors.primaryLight,
   },
   replyContent: {
-    color: THEME.colors.textSecondary,
     fontSize: 11,
+    color: THEME.colors.textSecondary,
+    marginTop: 1,
   },
   bubble: {
-    paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: THEME.borderRadius.lg,
+    paddingVertical: 10,
+    borderRadius: 18,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   bubbleMe: {
     backgroundColor: THEME.colors.bubbleMe,
-    borderBottomRightRadius: 2,
+    borderBottomRightRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   bubbleOther: {
-    backgroundColor: THEME.colors.bubbleOther,
-    borderBottomLeftRadius: 2,
+    backgroundColor: '#151D2E',
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   messageText: {
-    fontSize: 14,
+    fontSize: 14.5,
     lineHeight: 20,
+    letterSpacing: -0.1,
   },
   textMe: {
     color: '#FFFFFF',
   },
   textOther: {
-    color: THEME.colors.textPrimary,
+    color: '#F1F5F9',
+  },
+  meStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 3,
+    gap: 3,
   },
   timeMeText: {
+    fontSize: 10,
     color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 9,
-    alignSelf: 'flex-end',
-    marginTop: 2,
+    fontWeight: '500',
+  },
+  checkIcon: {
+    marginLeft: 2,
   },
   reactionsRow: {
     flexDirection: 'row',
@@ -183,24 +247,26 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
   },
+  reactionsRowMe: {
+    justifyContent: 'flex-end',
+  },
   reactionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    paddingHorizontal: 6,
+    backgroundColor: '#1E293B',
     paddingVertical: 2,
-    borderRadius: THEME.borderRadius.full,
-    gap: 4,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 3,
   },
   reactionEmoji: {
     fontSize: 12,
   },
   reactionCount: {
-    fontSize: 10,
-    color: THEME.colors.textSecondary,
-    fontWeight: '600',
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#CBD5E1',
   },
 });
-

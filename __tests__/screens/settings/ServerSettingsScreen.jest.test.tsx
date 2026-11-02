@@ -25,6 +25,7 @@ describe('Screen: ServerSettingsScreen', () => {
 
     const root = tree!.root;
     expect(root.findByProps({ testID: 'server-back-btn' })).toBeDefined();
+    expect(root.findByProps({ testID: 'preset-render-btn' })).toBeDefined();
     expect(root.findByProps({ testID: 'preset-wifi-btn' })).toBeDefined();
     expect(root.findByProps({ testID: 'preset-localhost-btn' })).toBeDefined();
     expect(root.findByProps({ testID: 'preset-emulator-btn' })).toBeDefined();
@@ -35,6 +36,28 @@ describe('Screen: ServerSettingsScreen', () => {
 
     const texts = root.findAllByType(Text);
     expect(texts.some((t) => t.props.children === 'Server Endpoints')).toBe(true);
+
+    act(() => {
+      tree.unmount();
+    });
+  });
+
+  it('populates fields when selecting render cloud preset', () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<ServerSettingsScreen />);
+    });
+
+    const renderPresetBtn = tree!.root.findByProps({ testID: 'preset-render-btn' });
+    act(() => {
+      renderPresetBtn.props.onPress();
+    });
+
+    const apiInput = tree!.root.findByProps({ testID: 'input-api-url' });
+    const wsInput = tree!.root.findByProps({ testID: 'input-ws-url' });
+
+    expect(apiInput.props.value).toBe('https://mivo-server.onrender.com/api/v1');
+    expect(wsInput.props.value).toBe('https://mivo-server.onrender.com');
 
     act(() => {
       tree.unmount();

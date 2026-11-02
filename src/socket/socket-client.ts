@@ -4,7 +4,7 @@ import { STORAGE_KEYS, normalizeUrl } from '../api/api-client';
 import { REALTIME_EVENTS } from '../constants/events';
 import { RoomCommunicationMode } from '../types';
 
-const DEFAULT_WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'http://localhost:4000';
+const DEFAULT_WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'https://mivo-server.onrender.com';
 
 class MobileSocketClient {
   private socket: Socket | null = null;

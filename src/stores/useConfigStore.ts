@@ -12,8 +12,8 @@ interface ConfigState {
   resetToDefaults: () => Promise<void>;
 }
 
-const DEFAULT_API = normalizeUrl(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1');
-const DEFAULT_WS = normalizeUrl(process.env.EXPO_PUBLIC_WS_URL || 'http://localhost:4000');
+const DEFAULT_API = normalizeUrl(process.env.EXPO_PUBLIC_API_URL || 'https://mivo-server.onrender.com/api/v1');
+const DEFAULT_WS = normalizeUrl(process.env.EXPO_PUBLIC_WS_URL || 'https://mivo-server.onrender.com');
 
 export const useConfigStore = create<ConfigState>((set) => ({
   apiUrl: DEFAULT_API,

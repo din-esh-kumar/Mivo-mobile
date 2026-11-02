@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   Smartphone,
   Laptop,
+  Cloud,
   CheckCircle2,
   Activity,
   Zap,
@@ -48,10 +49,16 @@ export default function ServerSettingsScreen() {
     ]);
   };
 
-  const setPreset = (host: string) => {
+  const setPreset = (target: string) => {
     triggerHaptic();
-    setInputApi(`http://${host}:4000/api/v1`);
-    setInputWs(`http://${host}:4000`);
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+      const clean = target.replace(/\/+$/, '');
+      setInputApi(`${clean}/api/v1`);
+      setInputWs(clean);
+    } else {
+      setInputApi(`http://${target}:4000/api/v1`);
+      setInputWs(`http://${target}:4000`);
+    }
     setPingResult(null);
   };
 
@@ -62,7 +69,7 @@ export default function ServerSettingsScreen() {
     try {
       const startTime = Date.now();
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
 
       // Attempt ping to health check or base endpoint
       await fetch(inputApi, { signal: controller.signal }).catch(() => {});
@@ -79,8 +86,8 @@ export default function ServerSettingsScreen() {
   const handleReset = async () => {
     triggerHaptic();
     await resetToDefaults();
-    setInputApi('http://localhost:4000/api/v1');
-    setInputWs('http://localhost:4000');
+    setInputApi('https://mivo-server.onrender.com/api/v1');
+    setInputWs('https://mivo-server.onrender.com');
     setPingResult(null);
     showCrossPlatformAlert('Reset', 'Endpoints restored to default values.');
   };
@@ -109,7 +116,7 @@ export default function ServerSettingsScreen() {
           </View>
           <Text style={styles.introTitle}>Connect to Mivo Backend</Text>
           <Text style={styles.introBody}>
-            When testing on a physical phone via Expo Go, replace "localhost" with your computer's local Wi-Fi IP address (e.g. 192.168.1.100).
+            Mivo is configured by default to connect to the live Render cloud backend (https://mivo-server.onrender.com). For local development, switch to your Wi-Fi IP or Localhost.
           </Text>
 
           {/* Active Status Badge */}
@@ -123,13 +130,23 @@ export default function ServerSettingsScreen() {
         <Text style={styles.sectionTitle}>QUICK PRESETS</Text>
         <View style={styles.presetsRow}>
           <TouchableOpacity
+            testID="preset-render-btn"
+            style={[styles.presetBtn, styles.presetBtnHighlight]}
+            onPress={() => setPreset('https://mivo-server.onrender.com')}
+            activeOpacity={0.8}
+          >
+            <Cloud size={15} color={THEME.colors.primaryLight} />
+            <Text style={[styles.presetText, styles.presetTextHighlight]}>Render Cloud</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             testID="preset-wifi-btn"
             style={styles.presetBtn}
             onPress={() => setPreset('192.168.1.10')}
             activeOpacity={0.8}
           >
             <Smartphone size={15} color={THEME.colors.accentGreen} />
-            <Text style={styles.presetText}>Wi-Fi (192.168.1.10)</Text>
+            <Text style={styles.presetText}>Wi-Fi</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -149,7 +166,7 @@ export default function ServerSettingsScreen() {
             activeOpacity={0.8}
           >
             <Smartphone size={15} color="#94A3B8" />
-            <Text style={styles.presetText}>Android (10.0.2.2)</Text>
+            <Text style={styles.presetText}>10.0.2.2</Text>
           </TouchableOpacity>
         </View>
 
@@ -158,7 +175,7 @@ export default function ServerSettingsScreen() {
         <Input
           testID="input-api-url"
           label="REST API URL"
-          placeholder="http://192.168.1.10:4000/api/v1"
+          placeholder="https://mivo-server.onrender.com/api/v1"
           value={inputApi}
           onChangeText={(val) => {
             setInputApi(val);
@@ -170,7 +187,7 @@ export default function ServerSettingsScreen() {
         <Input
           testID="input-ws-url"
           label="WebSocket Gateway URL"
-          placeholder="http://192.168.1.10:4000"
+          placeholder="https://mivo-server.onrender.com"
           value={inputWs}
           onChangeText={(val) => {
             setInputWs(val);
@@ -334,12 +351,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 4,
     borderRadius: THEME.borderRadius.md,
-    gap: 6,
+    gap: 4,
+  },
+  presetBtnHighlight: {
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    borderColor: 'rgba(99, 102, 241, 0.35)',
   },
   presetText: {
     color: '#E2E8F0',
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
+  },
+  presetTextHighlight: {
+    color: THEME.colors.primaryLight,
+    fontWeight: '700',
   },
   testBtn: {
     flexDirection: 'row',

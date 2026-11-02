@@ -10,7 +10,7 @@ export const STORAGE_KEYS = {
   HAPTICS_ENABLED: 'mivo_mobile_haptics_enabled',
 };
 
-const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://mivo-server.onrender.com/api/v1';
 
 export const normalizeUrl = (url: string): string => {
   let clean = url.trim().replace(/\/+$/, '');

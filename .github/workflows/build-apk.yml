@@ -45,16 +45,16 @@ jobs:
       - name: 🔑 Ensure gradlew is executable
         run: chmod +x android/gradlew
 
-      - name: 🔨 Build Android APK (Debug / Installable)
+      - name: 🔨 Build Standalone Release APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleRelease --no-daemon
         env:
           EXPO_PUBLIC_API_URL: https://mivo-server.onrender.com/api/v1
           EXPO_PUBLIC_WS_URL: https://mivo-server.onrender.com
 
-      - name: 📤 Upload APK Artifact
+      - name: 📤 Upload Standalone APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mivo-mobile-debug.apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: mivo-mobile.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30

@@ -7,14 +7,15 @@
     "preinstall": "only-allow pnpm",
     "start": "expo start",
     "dev": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "check:types": "tsc --noEmit",
     "test": "tsx --test __tests__/**/*.test.ts",
     "test:jest": "jest",
     "test:all": "pnpm test && pnpm test:jest",
-    "test:maestro": "maestro test .maestro/full_regression_suite.yaml"
+    "test:maestro": "maestro test .maestro/full_regression_suite.yaml",
+    "build:apk": "eas build -p android --profile preview"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.15",

@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'app/**'
-      - 'src/**'
-      - 'assets/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'app.json'
   workflow_dispatch:
 
 jobs:
@@ -27,9 +20,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: 📱 Set up Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: 📦 Set up pnpm
         uses: pnpm/action-setup@v4
@@ -51,9 +41,18 @@ jobs:
           EXPO_PUBLIC_API_URL: https://mivo-server.onrender.com/api/v1
           EXPO_PUBLIC_WS_URL: https://mivo-server.onrender.com
 
+      - name: 🐘 Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 🔑 Ensure gradlew is executable
+        run: chmod +x android/gradlew
+
       - name: 🔨 Build Android APK (Debug / Installable)
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
+        env:
+          EXPO_PUBLIC_API_URL: https://mivo-server.onrender.com/api/v1
+          EXPO_PUBLIC_WS_URL: https://mivo-server.onrender.com
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -61,4 +60,3 @@ jobs:
           name: mivo-mobile-debug.apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
